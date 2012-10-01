@@ -1,3 +1,5 @@
+# apparently these are the pre-loaded git ignores
+
 # Compiled Object files
 *.slo
 *.lo
@@ -10,3 +12,9 @@
 *.lai
 *.la
 *.a
+
+# these are the folders made by make
+
+exe/*
+lst/*
+build/*
