@@ -177,7 +177,7 @@ int main()
 	LED_Off(GREEN);
 	
 	#ifdef SENDER
-	uint32_t time = RTC_CounterGet();
+	RTC_CounterReset();
 	while (1)
 	{
 		
@@ -194,8 +194,8 @@ int main()
 		RADIO_Transmit(packet);
 		
 		// wait
-		while (RTC_CounterGet() < time + 32768);
-		time = RTC_CounterGet();
+		while (RTC_CounterGet() < 32768);
+		RTC_CounterReset();
 		
 	}
 	#elif defined RECEIVER

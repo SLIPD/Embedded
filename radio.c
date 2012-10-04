@@ -87,8 +87,7 @@ void configSend()
 	
 	uint8_t addr_array[5];
 	
-	RADIO_CE_lo;
-	writeRegister(NRF_CONFIG,0x52);
+	writeRegister(NRF_CONFIG,0x4E);
 	writeRegister(NRF_EN_AA,0x00);
 	writeRegister(NRF_EN_RXADDR,0x3F);
 	writeRegister(NRF_SETUP_AW,0x03);
@@ -117,15 +116,9 @@ void configSend()
 void configRecv()
 {
 
-	RADIO_CE_lo;
-
 	uint8_t addr_array[5];
 	
-	writeRegister(NRF_CONFIG,0x33);
-	
-	int i;
-	for (i = 0; i < 100000; i++);
-	
+	writeRegister(NRF_CONFIG,0x3F);
 	writeRegister(NRF_EN_AA,0x00);
 	writeRegister(NRF_EN_RXADDR,0x3F);
 	writeRegister(NRF_SETUP_AW,0x03);
@@ -252,19 +245,20 @@ void RADIO_Main()
 		
 		color = packet[0];
 		
+		LED_Off(RED);
+		LED_Off(BLUE);
+		LED_Off(GREEN);
+		
 		switch (color)
 		{
 		case 0:
 			LED_On(RED);
-			LED_Off(GREEN);
 			break;
 		case 1:
 			LED_On(BLUE);
-			LED_Off(RED);
 			break;
 		case 2:
 			LED_On(GREEN);
-			LED_Off(BLUE);
 			break;
 		}
 		
@@ -295,7 +289,14 @@ void RADIO_Interrupt()
 		if (status & 0x20)
 		{
 			TRACE("Radio: packet successfully transmitted\n");
-			RADIO_CE_hi;
+			RADIO_CE_lo;
+		}
+		
+		// packet not sent
+		if (status & 0x10)
+		{
+			TRACE("Radio: could not send packet\n");
+			RADIO_CE_lo;
 		}
 		
 		// clear interrupts
@@ -314,11 +315,6 @@ void RADIO_Transmit(uint8_t *packet)
 	TRACE("Radio: transmitting packet\n");
 	
 	// enable the chip to send the packet
-	RADIO_CE_lo;
-	
-	int i;
-	for (i = 0; i < 100000; i++);
-	
 	RADIO_CE_hi;
 	
 }
