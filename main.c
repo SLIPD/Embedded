@@ -7,7 +7,6 @@ Main file for SLIP D embedded software
 /* includes */
 #include "efm32.h"
 
-#include "efm32.h"
 #include "efm32_chip.h"
 #include "efm32_emu.h"
 #include "efm32_gpio.h"
@@ -23,6 +22,9 @@ Main file for SLIP D embedded software
 #include "radio.h"
 #include "led.h"
 #include "trace.h"
+#include "gps.h"
+#include "node_config.h"
+#include "flash.h"
 
 /* variables */
 
@@ -46,7 +48,7 @@ void GPIO_ODD_IRQHandler(void)
 
 void HandleInterrupt()
 {
-	TRACE("INTERRUPT RECEIVED\n");
+	//TRACE("INTERRUPT RECEIVED\n");
 	RADIO_Interrupt();
 }
 
@@ -131,6 +133,7 @@ void InitClocks()
 	RTC_Enable(true);
 	
 	// enable clock to USARTs
+	CMU_ClockEnable(cmuClock_LEUART1, true);
 	CMU_ClockEnable(cmuClock_UART1, true);
 	CMU_ClockEnable(cmuClock_USART2, true);
 	
@@ -165,40 +168,33 @@ int main()
 	// init radio
 	RADIO_Init();
 	TRACE("Radio started\n");
+	FLASH_Init();
+	TRACE("Flash started\n");
+	GPS_Init();
+	TRACE("GPS started\n");
 	
 	NVIC_EnableIRQ(GPIO_EVEN_IRQn);
 	NVIC_EnableIRQ(GPIO_ODD_IRQn);
 	
 	// set up LEDs
-	uint8_t color = 0;
 	uint8_t packet[RADIO_PACKET_SIZE];
 	LED_Off(RED);
 	LED_Off(BLUE);
 	LED_Off(GREEN);
 	
-	#ifdef SENDER
-	RTC_CounterReset();
+	#ifdef GPS
+	packet[0] = NODE_ID;
 	while (1)
 	{
 		
-		// update color
-		color = (color + 1) % 3;
-		TRACE("Main: updating color\n");
+		// read data from GPS
+		GPS_Read(packet);
 		
-		// show color
-		updateLEDs(color);
-		
-		// send color
-		packet[0] = color;
-		TRACE("Main: sending packet\n");
+		// transmit
 		RADIO_Transmit(packet);
 		
-		// wait
-		while (RTC_CounterGet() < 32768);
-		RTC_CounterReset();
-		
 	}
-	#elif defined RECEIVER
+	#elif defined BS
 	while(1)
 	{
 		

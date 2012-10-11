@@ -10,22 +10,29 @@
 void TRACE_Init()
 {
 	
-	UART1->CLKDIV = 256 * ((CMU_ClockFreqGet(cmuClock_HF)) / (9600 * 16) - 1);
+	#ifndef TRACE_OFF
 	
-	UART1->CMD = UART_CMD_TXEN | UART_CMD_RXEN;
+	UART1->CLKDIV = 256 * ((CMU_ClockFreqGet(cmuClock_UART1)) / (9600 * 16) - 1);
 	
-	GPIO->P[4].DOUT |= (1 << 2);
-	GPIO->P[4].MODEL =
-						GPIO_P_MODEL_MODE2_PUSHPULL
-					| GPIO_P_MODEL_MODE3_INPUT;
+	UART1->CMD = UART_CMD_TXEN | UART_CMD_RXEN | UART_CMD_CLEARRX | UART_CMD_CLEARTX;
+	
+	GPIO->P[4].MODEL = (GPIO->P[4].MODEL & ~_GPIO_P_MODEL_MODE2_MASK) | GPIO_P_MODEL_MODE2_PUSHPULL;
+	GPIO->P[4].MODEL = (GPIO->P[4].MODEL & ~_GPIO_P_MODEL_MODE3_MASK) | GPIO_P_MODEL_MODE3_INPUT;
 	
 	UART1->ROUTE = UART_ROUTE_LOCATION_LOC3
           | UART_ROUTE_TXPEN | UART_ROUTE_RXPEN;
+  
+	#endif
 	
 }
 
 void TRACE(char* msg)
 {
+
+	#ifndef TRACE_OFF
+	
+	LED_On(GREEN);
+	
 	NVIC_DisableIRQ(GPIO_EVEN_IRQn);
 	NVIC_DisableIRQ(GPIO_ODD_IRQn);
 	
@@ -39,4 +46,9 @@ void TRACE(char* msg)
 	
 	NVIC_EnableIRQ(GPIO_EVEN_IRQn);
 	NVIC_EnableIRQ(GPIO_ODD_IRQn);
+	
+	LED_Off(GREEN);
+	
+	#endif
+	
 }

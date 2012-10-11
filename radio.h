@@ -3,10 +3,6 @@
 
 #include <stdint.h>
 
-#define RECEIVER
-
-#define NODE_CH 2
-
 #define RADIO_CE_PORT 1
 #define RADIO_CE_PIN 1
 #define RADIO_INT_PORT 1

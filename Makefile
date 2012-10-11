@@ -87,10 +87,13 @@ efm32lib/src/efm32_int.c \
 efm32lib/src/efm32_emu.c \
 efm32lib/src/efm32_adc.c \
 efm32lib/src/efm32_rtc.c \
+efm32lib/src/efm32_leuart.c \
 main.c \
 radio.c \
 led.c \
-trace.c
+trace.c \
+gps.c \
+flash.c
 
 S_SRC +=  \
 CMSIS/CM3/DeviceSupport/EnergyMicro/EFM32/startup/cs3/startup_efm32.s

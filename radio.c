@@ -7,6 +7,8 @@
 
 #include "led.h"
 #include "trace.h"
+#include "node_config.h"
+#include "flash.h"
 
 /* variables */
 uint8_t interrupts = 0;
@@ -22,6 +24,9 @@ void writeRegisterMulti(uint8_t reg, uint8_t bytes, uint8_t *data);
 
 void configSend();
 void configRecv();
+void configBoth();
+void enableRX();
+void enableTX();
 
 /* functions */
 void RADIO_Init()
@@ -46,9 +51,11 @@ void RADIO_Init()
 	GPIO->P[0].DOUT &= ~(1 << 2);
 	GPIO->P[0].MODEL = (GPIO->P[0].MODEL & ~_GPIO_P_MODEL_MODE2_MASK) | GPIO_P_MODEL_MODE2_PUSHPULL;
 	
+	USART2->CMD = USART_CMD_CLEARRX | USART_CMD_CLEARTX;
+	
 	usartInit.msbf = true;
 	usartInit.clockMode = usartClockMode0;
-	usartInit.baudrate = 1000000;
+	usartInit.baudrate = 7000000;
 	USART_InitSync(RADIO_USART, &usartInit);
 	RADIO_USART->ROUTE = (RADIO_USART->ROUTE & ~_USART_ROUTE_LOCATION_MASK) | RADIO_USART_LOCATION;
 	RADIO_USART->ROUTE |= USART_ROUTE_TXPEN | USART_ROUTE_RXPEN | USART_ROUTE_CLKPEN;
@@ -59,15 +66,10 @@ void RADIO_Init()
 	GPIO_IntConfig(gpioPortB,0,false,true,true);
 	
 	// configure radio
-	#ifdef SENDER
-	configSend();
-	#elif defined RECEIVER
-	configRecv();
-	#endif
+	configBoth();
 	
 	// enable amp
 	GPIO->P[0].DOUT |= (1 << 2);
-	//GPIO->P[RADIO_EN_RX_PORT].DOUT &= ~(1 << RADIO_EN_RX_PIN);
 	
 	uint8_t status = readRegister(NRF_STATUS);
 	
@@ -80,6 +82,63 @@ void RADIO_Init()
 		TRACE("BAD response from RADIO\n");
 	}
 	
+	#ifdef GPS
+	enableTX();
+	#elif defined(BS)
+	enableRX();
+	#endif
+	
+}
+
+void configBoth()
+{
+	
+	uint8_t addr_array[5];
+	
+	addr_array[0] = 0xE7;
+	addr_array[1] = 0xE7;
+	addr_array[2] = 0xE7;
+	addr_array[3] = 0xE7;
+	addr_array[4] = 0xE7;
+	
+	//writeRegister(NRF_CONFIG,0x0E);
+	writeRegister(NRF_EN_AA,0x01);
+	writeRegister(NRF_EN_RXADDR,0x3F);
+	writeRegister(NRF_SETUP_AW,0x03);
+	writeRegister(NRF_SETUP_RETR,0x70);
+	writeRegister(NRF_RF_CH,NODE_CH);
+	writeRegister(NRF_RF_SETUP,0x0F);
+	
+	writeRegisterMulti(NRF_TX_ADDR, 5, addr_array);
+	writeRegisterMulti(NRF_RX_ADDR_P0, 5, addr_array);
+	
+	writeRegister(NRF_RX_PW_P0,0x20);
+	writeRegister(NRF_DYNPD, 0x00);
+	writeRegister(NRF_FEATURE, 0x00);
+	
+	// flush receive buffer, clear interupts
+	sendCommand(NRF_FLUSH_TX, NRF_NOP);
+	sendCommand(NRF_FLUSH_RX, NRF_NOP);
+	writeRegister(NRF_STATUS,0x70);
+	
+}
+
+void enableRX()
+{
+	writeRegister(NRF_CONFIG,0x3F);
+	sendCommand(NRF_FLUSH_TX, NRF_NOP);
+	sendCommand(NRF_FLUSH_RX, NRF_NOP);
+	writeRegister(NRF_STATUS,0x70);
+	RADIO_CE_hi;
+}
+
+void enableTX()
+{
+	RADIO_CE_lo;
+	writeRegister(NRF_CONFIG,0x4E);
+	sendCommand(NRF_FLUSH_TX, NRF_NOP);
+	sendCommand(NRF_FLUSH_RX, NRF_NOP);
+	writeRegister(NRF_STATUS,0x70);
 }
 
 void configSend()
@@ -229,37 +288,22 @@ void sendCommand(uint8_t cmd, uint8_t data)
 void RADIO_Main()
 {
 	
-	uint8_t packet[RADIO_PACKET_SIZE], i, color;
+	uint8_t packet[RADIO_PACKET_SIZE], fifo_status;
 	
 	if (interrupts > 0)
 	{
-	
-		for (i = 0; i < interrupts; i++)
+		
+		LED_Off(BLUE);
+		
+		fifo_status = readRegister(NRF_FIFO_STATUS);
+		
+		while (!(fifo_status & 0x01))
 		{
 			
 			receivePayload(NRF_R_RX_PAYLOAD,RADIO_PACKET_SIZE,packet);
 			
-		}
-		
-		interrupts = 0;
-		
-		color = packet[0];
-		
-		LED_Off(RED);
-		LED_Off(BLUE);
-		LED_Off(GREEN);
-		
-		switch (color)
-		{
-		case 0:
-			LED_On(RED);
-			break;
-		case 1:
-			LED_On(BLUE);
-			break;
-		case 2:
-			LED_On(GREEN);
-			break;
+			TRACE(&packet[1]);
+			
 		}
 		
 	}
@@ -273,31 +317,42 @@ void RADIO_Interrupt()
 	if (GPIO->IF & (1 << RADIO_INT_PIN))
 	{
 		
-		TRACE("Radio: INTERRUPT\n");
+		//TRACE("Radio: INTERRUPT\n");
 		
 		// read status
 		uint8_t status = readRegister(NRF_STATUS);
 		
+		#ifdef BS
 		// if packet received
 		if (status & 0x40)
 		{
-			TRACE("Radio: packet received\n");
+			//TRACE("Radio: packet received\n");
 			interrupts++;
+			LED_On(BLUE);
 		}
+		#endif
 		
+		#ifdef GPS
 		// if packet sent
 		if (status & 0x20)
 		{
 			TRACE("Radio: packet successfully transmitted\n");
-			RADIO_CE_lo;
+			
+			uint8_t fifo_status = readRegister(NRF_FIFO_STATUS);
+			if (fifo_status & 0x10)
+				RADIO_CE_lo;
+			LED_Off(BLUE);
+			LED_Off(RED);
 		}
 		
 		// packet not sent
 		if (status & 0x10)
 		{
 			TRACE("Radio: could not send packet\n");
-			RADIO_CE_lo;
+			LED_Off(BLUE);
+			LED_On(RED);
 		}
+		#endif
 		
 		// clear interrupts
 		GPIO->IFC = (1 << RADIO_INT_PIN);
@@ -310,9 +365,34 @@ void RADIO_Interrupt()
 void RADIO_Transmit(uint8_t *packet)
 {
 	
+	uint8_t flash_packet[RADIO_PACKET_SIZE];
+	uint8_t fifo_status  = readRegister(NRF_FIFO_STATUS);
+	
+	// if data in flash, send that first
+	while ((!(fifo_status & (1 << 5))) && FLASH_Pop(flash_packet))
+	{
+		
+		sendPayload(NRF_W_TX_PAYLOAD,RADIO_PACKET_SIZE,flash_packet);
+		
+		fifo_status  = readRegister(NRF_FIFO_STATUS);
+		
+	}
+	
+	// block while FIFO full
+	if (fifo_status & (1 << 5))
+	{
+		// write to flash
+		FLASH_Push(packet);
+	}
+	else
+	{
+		sendPayload(NRF_W_TX_PAYLOAD,RADIO_PACKET_SIZE,packet);
+	}
+	
 	// send payload to chip
-	sendPayload(NRF_W_TX_PAYLOAD,RADIO_PACKET_SIZE,packet);
-	TRACE("Radio: transmitting packet\n");
+	TRACE("Radio: transmitting packet(s)\n");
+	
+	LED_On(BLUE);
 	
 	// enable the chip to send the packet
 	RADIO_CE_hi;
