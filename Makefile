@@ -92,6 +92,13 @@ radio.c \
 led.c \
 trace.c
 
+ifeq ($BASE,"")
+	C_SRC += main.c
+else
+	C_SRC += mainbase.c
+endif
+
+
 S_SRC +=  \
 CMSIS/CM3/DeviceSupport/EnergyMicro/EFM32/startup/cs3/startup_efm32.s
 
@@ -120,6 +127,10 @@ debug:    $(OBJ_DIR) $(LST_DIR) $(EXE_DIR) $(EXE_DIR)/$(PROJECTNAME).bin
 
 release:  CFLAGS += -DNDEBUG -O3 
 release:  $(OBJ_DIR) $(LST_DIR) $(EXE_DIR) $(EXE_DIR)/$(PROJECTNAME).bin
+
+base:     CFLAGS += -DDEBUG -O0 -g3
+base:     $(OBJ_DIR) $(LST_DIR) $(EXE_DIR) $(EXE_DIR)/$(PROJECTNAME).bin
+
 
 # Create directories
 $(OBJ_DIR):
