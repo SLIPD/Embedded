@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-#define RECEIVER
+#define SENDER
 
 #define NODE_CH 2
 

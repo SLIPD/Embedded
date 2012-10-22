@@ -20,7 +20,6 @@ Main file for SLIP D embedded software
 
 #include <stdint.h>
 
-#include "radio.h"
 #include "led.h"
 #include "trace.h"
 
@@ -29,44 +28,32 @@ Main file for SLIP D embedded software
 
 /* prototypes */
 void InitClocks();
-void HandleInterrupt();
 void startupLEDs();
-void updateLEDs(uint8_t color);
+void wait(uint32_t ms);
 
 /* functions */
-// messy interrupt handler
-void GPIO_EVEN_IRQHandler(void) 
-{
-	HandleInterrupt();
-}
-void GPIO_ODD_IRQHandler(void)
-{
-	HandleInterrupt();
-}
-
-void HandleInterrupt()
-{
-	TRACE("INTERRUPT RECEIVED\n");
-	RADIO_Interrupt();
-}
-
-void updateLEDs(uint8_t color)
+void wait(uint32_t ms)
 {
 	
-	switch (color)
+	uint32_t time, 
+		clockFreq = CMU_ClockFreqGet(cmuClock_RTC);
+	
+	while (ms > 0)
 	{
-	case 0:
-		LED_On(RED);
-		LED_Off(GREEN);
-		break;
-	case 1:
-		LED_On(BLUE);
-		LED_Off(RED);
-		break;
-	case 2:
-		LED_On(GREEN);
-		LED_Off(BLUE);
-		break;
+		
+		time = RTC_CounterGet();
+		
+		if (16777215 - time < ((double)ms / 1000.0) * clockFreq)
+		{
+			ms -= (uint32_t)(1000.0 * ((16777215 - time) / (double)clockFreq));
+			while (RTC_CounterGet() > time);
+		}
+		else
+		{
+			while (RTC_CounterGet() < time + ((double)ms / 1000.0) * clockFreq);
+			break;
+		}
+		
 	}
 	
 }
@@ -78,22 +65,19 @@ void startupLEDs()
 	LED_Off(BLUE);
 	LED_Off(GREEN);
 	
-	uint32_t time = RTC_CounterGet();
-	while (RTC_CounterGet() < time + 32768);
+	wait(1000);
 	
 	LED_On(RED);
 	LED_On(BLUE);
 	LED_On(GREEN);
 	
-	time = RTC_CounterGet();
-	while (RTC_CounterGet() < time + 32768);
+	wait(1000);
 	
 	LED_Off(RED);
 	LED_Off(BLUE);
 	LED_Off(GREEN);
 	
-	time = RTC_CounterGet();
-	while (RTC_CounterGet() < time + 32768);
+	wait(1000);
 	
 }
 
@@ -158,53 +142,6 @@ int main()
 	// show startup LEDs
 	startupLEDs();
 	
-	// enable gpio interrupts
-	NVIC_ClearPendingIRQ(GPIO_EVEN_IRQn);
-	NVIC_ClearPendingIRQ(GPIO_ODD_IRQn);
-	
-	// init radio
-	RADIO_Init();
-	TRACE("Radio started\n");
-	
-	NVIC_EnableIRQ(GPIO_EVEN_IRQn);
-	NVIC_EnableIRQ(GPIO_ODD_IRQn);
-	
-	// set up LEDs
-	uint8_t color = 0;
-	uint8_t packet[RADIO_PACKET_SIZE];
-	LED_Off(RED);
-	LED_Off(BLUE);
-	LED_Off(GREEN);
-	
-	#ifdef SENDER
-	RTC_CounterReset();
-	while (1)
-	{
-		
-		// update color
-		color = (color + 1) % 3;
-		TRACE("Main: updating color\n");
-		
-		// show color
-		updateLEDs(color);
-		
-		// send color
-		packet[0] = color;
-		TRACE("Main: sending packet\n");
-		RADIO_Transmit(packet);
-		
-		// wait
-		while (RTC_CounterGet() < 32768);
-		RTC_CounterReset();
-		
-	}
-	#elif defined RECEIVER
-	while(1)
-	{
-		
-		RADIO_Main();
-		
-	}
-	#endif
+	// start timers
 	
 }
