@@ -120,6 +120,8 @@ void InitClocks()
 	CMU_ClockEnable(cmuClock_UART1, true);
 	CMU_ClockEnable(cmuClock_USART2, true);
 	
+	CMU_ClockEnable(cmuClock_I2C0, true);
+	
 }
 
 void TIMER0_IRQHandler(void)
@@ -141,7 +143,7 @@ int main()
 	SystemCoreClockUpdate();
 	
 	// start clocks
-	InitClocks();
+	//InitClocks();
 	
 	// startup trace
 	TRACE_Init();
@@ -157,8 +159,9 @@ int main()
 	I2C0->ROUTE |= I2C_ROUTE_SDAPEN | I2C_ROUTE_SCLPEN | I2C_ROUTE_LOCATION_LOC3;
 	
 	I2C_Init_TypeDef i2cInit = I2C_INIT_DEFAULT;
+	
 	I2C_Init(I2C0, &i2cInit);
-  I2C0->CLKDIV=1;
+  //I2C0->CLKDIV=1;
 	
 	DISPLAY_Init();
 	
