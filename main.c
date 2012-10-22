@@ -155,6 +155,9 @@ int main()
 	// show startup LEDs
 	startupLEDs();
 	
+	LED_On(RED);
+	while(1);
+	
 	CMU->HFPERCLKEN0 |= CMU_HFPERCLKEN0_I2C0;
 	I2C0->ROUTE |= I2C_ROUTE_SDAPEN | I2C_ROUTE_SCLPEN | I2C_ROUTE_LOCATION_LOC3;
 	
