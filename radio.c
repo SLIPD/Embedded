@@ -85,6 +85,8 @@ void RADIO_Init()
 void configSend()
 {
 	
+	TRACE("RADIO: Config SENDER\n");
+	
 	uint8_t addr_array[5];
 	
 	writeRegister(NRF_CONFIG,0x4E);
@@ -115,6 +117,8 @@ void configSend()
 
 void configRecv()
 {
+
+	TRACE("RADIO: Config RECEIVER\n");
 
 	uint8_t addr_array[5];
 	
@@ -316,5 +320,12 @@ void RADIO_Transmit(uint8_t *packet)
 	
 	// enable the chip to send the packet
 	RADIO_CE_hi;
+	
+}
+
+bool RADIO_Ready()
+{
+	
+	return ~(GPIO->P[RADIO_CE_PORT].DOUT & (1 << RADIO_CE_PIN));
 	
 }

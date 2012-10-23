@@ -3,9 +3,11 @@
 #include "string.h"
 #include "efm32_gpio.h"
 #include "efm32_cmu.h"
+#include "efm32_int.h"
 #include "efm32_usart.h"
 
 #include "led.h"
+#include "radio.h"
 
 void TRACE_Init()
 {
@@ -26,8 +28,8 @@ void TRACE_Init()
 
 void TRACE(char* msg)
 {
-	NVIC_DisableIRQ(GPIO_EVEN_IRQn);
-	NVIC_DisableIRQ(GPIO_ODD_IRQn);
+	#ifndef NO_TRACE
+	INT_Disable();
 	
 	int todo, bytesToSend = strlen(msg);
 	for (todo = 0; todo < bytesToSend; todo++) {
@@ -37,6 +39,6 @@ void TRACE(char* msg)
   
 	while (!(UART1->STATUS & USART_STATUS_TXC));
 	
-	NVIC_EnableIRQ(GPIO_EVEN_IRQn);
-	NVIC_EnableIRQ(GPIO_ODD_IRQn);
+	INT_Enable();
+	#endif
 }

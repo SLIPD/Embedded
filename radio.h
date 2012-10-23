@@ -2,8 +2,10 @@
 #define __RADIO_H__
 
 #include <stdint.h>
+#include <stdbool.h>
 
-#define SENDER
+#define RECEIVER
+//#define NO_TRACE
 
 #define NODE_CH 2
 
@@ -28,6 +30,8 @@
 void RADIO_Init();
 void RADIO_Main();
 void RADIO_Interrupt();
+
+bool RADIO_Ready();
 
 void RADIO_Transmit(uint8_t packet[RADIO_PACKET_SIZE]);
 

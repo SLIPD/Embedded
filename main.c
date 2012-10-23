@@ -24,6 +24,7 @@ Main file for SLIP D embedded software
 #include "trace.h"
 #include "radio.h"
 #include "display.h"
+#include "i2cdrv.h"
 
 /* variables */
 
@@ -34,6 +35,21 @@ void startupLEDs();
 void wait(uint32_t ms);
 
 /* functions */
+void GPIO_EVEN_IRQHandler(void) 
+{
+	HandleInterrupt();
+}
+void GPIO_ODD_IRQHandler(void)
+{
+	HandleInterrupt();
+}
+
+void HandleInterrupt()
+{
+	TRACE("INTERRUPT RECEIVED\n");
+	RADIO_Interrupt();
+}
+
 void wait(uint32_t ms)
 {
 	
@@ -143,11 +159,16 @@ int main()
 	SystemCoreClockUpdate();
 	
 	// start clocks
-	//InitClocks();
+	InitClocks();
 	
 	// startup trace
 	TRACE_Init();
 	TRACE("Trace started\n");
+	
+	NVIC_ClearPendingIRQ(GPIO_EVEN_IRQn);
+	NVIC_ClearPendingIRQ(GPIO_ODD_IRQn);
+	NVIC_EnableIRQ(GPIO_EVEN_IRQn);
+	NVIC_EnableIRQ(GPIO_ODD_IRQn);
 	
 	// init LEDs
 	LED_Init();
@@ -155,56 +176,56 @@ int main()
 	// show startup LEDs
 	startupLEDs();
 	
-	LED_On(RED);
-	while(1);
-	
+	#ifdef RECEIVER
 	CMU->HFPERCLKEN0 |= CMU_HFPERCLKEN0_I2C0;
 	I2C0->ROUTE |= I2C_ROUTE_SDAPEN | I2C_ROUTE_SCLPEN | I2C_ROUTE_LOCATION_LOC3;
 	
 	I2C_Init_TypeDef i2cInit = I2C_INIT_DEFAULT;
 	
-	I2C_Init(I2C0, &i2cInit);
-  //I2C0->CLKDIV=1;
+	I2C0->CLKDIV=1;
+	
+	I2CDRV_Init(&i2cInit);
 	
 	DISPLAY_Init();
-	
-	while(1);
+	#endif
 	
 	// radio
 	RADIO_Init();
 	
-	// start timers
-	CMU_ClockEnable(cmuClock_TIMER0, true);
+	#ifdef SENDER
+	uint8_t buffer[32], pos = 0;
 	
-	TIMER_Init_TypeDef timerInit =
-  {
-    .enable     = true, 
-    .debugRun   = true, 
-    .prescale   = timerPrescale1024, 
-    .clkSel     = timerClkSelHFPerClk, 
-    .fallAction = timerInputActionNone, 
-    .riseAction = timerInputActionNone, 
-    .mode       = timerModeUp, 
-    .dmaClrAct  = false,
-    .quadModeX4 = false, 
-    .oneShot    = false, 
-    .sync       = false, 
-  };
-  
-  /* Enable overflow interrupt */
-  TIMER_IntEnable(TIMER0, TIMER_IF_OF);
-  
-  /* Enable TIMER0 interrupt vector in NVIC */
-  NVIC_EnableIRQ(TIMER0_IRQn);
-  
-  /* Set TIMER Top value */
-  TIMER_TopSet(TIMER0, CMU_ClockFreqGet(cmuClock_TIMER0));
-  
-  /* Configure TIMER */
-  TIMER_Init(TIMER0, &timerInit);
-  
-  LED_On(GREEN);
-  
-  while (1);
+	while (!(UART1->STATUS & USART_STATUS_TXBL));
+		
+	UART1->TXDATA = 0xFF;
+	
+	while (1)
+	{
+		
+		if (pos == 32)
+		{
+			
+			// send over radio
+			while (!RADIO_Ready());
+			RADIO_Transmit(buffer);
+			
+			pos = 0;
+			
+			while (!(UART1->STATUS & USART_STATUS_TXBL));
+		
+			UART1->TXDATA = 0xFF;
+			
+		}
+		
+		while (!(UART1->STATUS & USART_STATUS_RXDATAV));
+		
+		buffer[pos] = UART1->RXDATA;
+		pos++;
+		
+	}
+	
+	#endif
+	
+	while (1);
 	
 }
