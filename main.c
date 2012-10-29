@@ -34,8 +34,35 @@ void InitClocks();
 void HandleInterrupt();
 void startupLEDs();
 void updateLEDs(uint8_t color);
+void wait(uint32_t ms);
 
 /* functions */
+void wait(uint32_t ms)
+{
+	
+	uint32_t time, 
+		clockFreq = CMU_ClockFreqGet(cmuClock_RTC);
+	
+	while (ms > 0)
+	{
+		
+		time = RTC_CounterGet();
+		
+		if (16777215 - time < ((double)ms / 1000.0) * clockFreq)
+		{
+			ms -= (uint32_t)(1000.0 * ((16777215 - time) / (double)clockFreq));
+			while (RTC_CounterGet() > time);
+		}
+		else
+		{
+			while (RTC_CounterGet() < time + ((double)ms / 1000.0) * clockFreq);
+			break;
+		}
+		
+	}
+	
+}
+
 // messy interrupt handler
 void GPIO_EVEN_IRQHandler(void) 
 {
@@ -80,22 +107,19 @@ void startupLEDs()
 	LED_Off(BLUE);
 	LED_Off(GREEN);
 	
-	uint32_t time = RTC_CounterGet();
-	while (RTC_CounterGet() < time + 32768);
+	wait(1000);
 	
 	LED_On(RED);
 	LED_On(BLUE);
 	LED_On(GREEN);
 	
-	time = RTC_CounterGet();
-	while (RTC_CounterGet() < time + 32768);
+	wait(1000);
 	
 	LED_Off(RED);
 	LED_Off(BLUE);
 	LED_Off(GREEN);
 	
-	time = RTC_CounterGet();
-	while (RTC_CounterGet() < time + 32768);
+	wait(1000);
 	
 }
 
@@ -157,6 +181,7 @@ int main()
 	
 	// init LEDs
 	LED_Init();
+	TRACE("LEDs ON\n");
 	
 	// show startup LEDs
 	startupLEDs();
@@ -168,10 +193,6 @@ int main()
 	// init radio
 	RADIO_Init();
 	TRACE("Radio started\n");
-	FLASH_Init();
-	TRACE("Flash started\n");
-	GPS_Init();
-	TRACE("GPS started\n");
 	
 	NVIC_EnableIRQ(GPIO_EVEN_IRQn);
 	NVIC_EnableIRQ(GPIO_ODD_IRQn);
@@ -183,6 +204,11 @@ int main()
 	LED_Off(GREEN);
 	
 	#ifdef GPS
+		GPS_Init();
+		TRACE("GPS started\n");
+		FLASH_Init();
+		TRACE("Flash started\n");
+	
 		packet[0] = NODE_ID;
 		while (1)
 		{
