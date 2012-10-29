@@ -224,7 +224,7 @@ uint8_t PP(uint8_t addr[3], uint8_t len, uint8_t payload[])
 	
 	GPIO->P[1].DOUTSET = (1 << 6);
 	
-	return READSCU() & 0x20;
+	return READSCUR() & 0x20;
 	
 }
 
