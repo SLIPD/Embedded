@@ -226,7 +226,7 @@ uint8_t PP(uint8_t addr[3], uint8_t len, uint8_t payload[])
 	
 	while(RDSR() & 0x01);
 	
-	return RDSCUR() & 0x20;
+	return !(RDSCUR() & 0x20);
 	
 }
 
