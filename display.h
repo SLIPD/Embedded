@@ -9,5 +9,6 @@
 void DISPLAY_Init();
 void DISPLAY_SetText(char *text, uint8_t line);
 void DISPALY_Clear();
+void DISPLAY_Write(char* str);
 
 #endif

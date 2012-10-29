@@ -5,9 +5,11 @@
 #include <stdbool.h>
 
 #define RECEIVER
+//#define SENDER
 //#define NO_TRACE
 
 #define NODE_CH 2
+#define NODE_ID 1
 
 #define RADIO_CE_PORT 1
 #define RADIO_CE_PIN 1

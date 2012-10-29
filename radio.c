@@ -3,10 +3,12 @@
 #include "NRF24L01.h"
 #include "efm32_usart.h"
 #include "efm32_gpio.h"
+#include "efm32_int.h"
 #include "efm32_rtc.h"
 
 #include "led.h"
 #include "trace.h"
+#include "display.h"
 
 /* variables */
 uint8_t interrupts = 0;
@@ -233,38 +235,31 @@ void sendCommand(uint8_t cmd, uint8_t data)
 void RADIO_Main()
 {
 	
-	uint8_t packet[RADIO_PACKET_SIZE], i, color;
+	uint8_t packet[RADIO_PACKET_SIZE], 
+		fifo_status;
 	
 	if (interrupts > 0)
 	{
-	
-		for (i = 0; i < interrupts; i++)
+		
+		INT_Disable();
+		fifo_status = readRegister(NRF_FIFO_STATUS);
+		while ((~fifo_status) & 0x01) // while fifo not empty
 		{
-			
+		
 			receivePayload(NRF_R_RX_PAYLOAD,RADIO_PACKET_SIZE,packet);
+			
+			if (packet[0] == 0x00 || packet[0] == NODE_ID)
+			{
+				// handle payload
+				//DISPLAY_Write((char*)(packet+1));
+			}
+			
+			fifo_status = readRegister(NRF_FIFO_STATUS);
 			
 		}
 		
 		interrupts = 0;
-		
-		color = packet[0];
-		
-		LED_Off(RED);
-		LED_Off(BLUE);
-		LED_Off(GREEN);
-		
-		switch (color)
-		{
-		case 0:
-			LED_On(RED);
-			break;
-		case 1:
-			LED_On(BLUE);
-			break;
-		case 2:
-			LED_On(GREEN);
-			break;
-		}
+		INT_Enable();
 		
 	}
 	
