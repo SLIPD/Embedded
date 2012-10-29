@@ -13,11 +13,12 @@ uint32_t read_addr = 0, write_addr = 0;
 /* prototypes */
 void WREN(bool enable);
 uint8_t RDSR();
-void PP(uint8_t addr[3], uint8_t len, uint8_t payload[]);
+uint8_t PP(uint8_t addr[3], uint8_t len, uint8_t payload[]);
 void READ(uint8_t addr[3], uint8_t len, uint8_t payload[]);
 void WRITE(uint8_t addr[3], uint8_t len, uint8_t payload[]);
 void CE();
-void CEAndWait();
+uint8_t CEAndWait();
+uint8_t RDSCUR();
 
 /* functions */
 // must be run after radio is init'd
