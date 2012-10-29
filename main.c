@@ -31,6 +31,7 @@ Main file for SLIP D embedded software
 DISPLAY_Message displayMessage;
 uint8_t buf[192*2];
 Mag_Vector_Type magReading;
+char str [32];
 
 
 /* prototypes */
@@ -40,6 +41,33 @@ void startupLEDs();
 void updateLEDs(uint8_t color);
 
 /* functions */
+
+void wait(uint32_t ms)
+{
+
+	uint32_t time, 
+		clockFreq = CMU_ClockFreqGet(cmuClock_RTC);
+
+	while (ms > 0)
+	{
+
+		time = RTC_CounterGet();
+
+		if (16777215 - time < ((double)ms / 1000.0) * clockFreq)
+		{
+			ms -= (uint32_t)(1000.0 * ((16777215 - time) / (double)clockFreq));
+			while (RTC_CounterGet() > time);
+		}
+		else
+		{
+			while (RTC_CounterGet() < time + ((double)ms / 1000.0) * clockFreq);
+			break;
+		}
+
+	}
+
+}
+
 // messy interrupt handler
 void GPIO_EVEN_IRQHandler(void) 
 {
@@ -195,37 +223,36 @@ int main()
 	LED_Off(RED);
 	LED_Off(BLUE);
 	LED_Off(GREEN);
-	
         
         MAGRegReadN(OUT_X_MSB_REG, 6, buf);
         magReading.x = buf[0]<<8 | buf[1];
         magReading.y = buf[2]<<8 | buf[3];
         magReading.z = buf[4]<<8 | buf[5];
-        
-        displayMessage.topLine=true;
-        
-        uint8_t status = 0x00;
-        int i;
-        
+
 	while(1)
         {
             if(MAGRegRead(DR_STATUS_REG) & 0x08)
             {
-                TRACE("MAG UPDATE AVAILABLE\n");
+               // TRACE("MAG UPDATE AVAILABLE\n");
                 MAGRegReadN(OUT_X_MSB_REG, 6, buf);
                 magReading.x = buf[0]<<8 | buf[1];
                 magReading.y = buf[2]<<8 | buf[3];
                 magReading.z = buf[4]<<8 | buf[5];
-                displayMessage.message = ("MAG UPDATE AVAILABLE\n");
+                displayMessage.topLine=true;
+                displayMessage.message = ("YES\n");
+                DISPLAY_SetMessage(&displayMessage); 
+                displayMessage.topLine=false;
+                sprintf(str, "%+4i %+4i", magReading.x, magReading.y);
+                displayMessage.message=(str);
                 DISPLAY_SetMessage(&displayMessage); 
             }
             else
             {
-                TRACE("NO MAG UPDATE AVAILABLE\n");
-                displayMessage.message = ("NO MAG UPDATE AVAILABLE\n");
+               // TRACE("NO MAG UPDATE AVAILABLE\n");
+                displayMessage.message = ("NO\n");
                 DISPLAY_SetMessage(&displayMessage); 
             }
             DISPLAY_Update(); 
-            for(i = 0; i < 0xFFFFFF; i++);
+            wait(1000);
         }
 }
