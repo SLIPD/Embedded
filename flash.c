@@ -28,6 +28,7 @@ void FLASH_Init()
 	GPIO->P[1].DOUT |= (1 << 6);
 	GPIO->P[1].MODEL = (GPIO->P[1].MODEL & ~_GPIO_P_MODEL_MODE6_MASK) | GPIO_P_MODEL_MODE6_PUSHPULL;
 	
+	/*
 	// flash test
 	uint8_t packet[32];
 	int i;
@@ -37,13 +38,14 @@ void FLASH_Init()
 	}
 	packet[31] = 0;
 	
-	TRACE(packet);
+	TRACE(packet);*/
 	
 	if(!CEAndWait()){
 		TRACE("QUITTING\n");
 		while(1);
 	}
 	
+	/*
 	FLASH_Push(packet);
 	
 	TRACE("\n");
@@ -64,7 +66,7 @@ void FLASH_Init()
 	TRACE(packet);
 	
 	while (1);
-	
+	*/
 }
 
 void WRITE(uint8_t addr[3], uint8_t len, uint8_t payload[])

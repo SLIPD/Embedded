@@ -183,24 +183,24 @@ int main()
 	LED_Off(GREEN);
 	
 	#ifdef GPS
-	packet[0] = NODE_ID;
-	while (1)
-	{
-		
-		// read data from GPS
-		GPS_Read(packet);
-		
-		// transmit
-		RADIO_Transmit(packet);
-		
-	}
+		packet[0] = NODE_ID;
+		while (1)
+		{
+			
+			// read data from GPS
+			GPS_Read(packet);
+			
+			// transmit
+			RADIO_Transmit(packet);
+			
+		}
 	#elif defined BS
-	while(1)
-	{
-		
-		RADIO_Main();
-		
-	}
+		while(1)
+		{
+			
+			RADIO_Main();
+			
+		}
 	#endif
 	
 }
