@@ -336,7 +336,7 @@ void RADIO_Interrupt()
 		// if packet sent
 		if (status & 0x20)
 		{
-			TRACE("Radio: packet successfully transmitted\n");
+			//TRACE("Radio: packet successfully transmitted\n");
 			
 			uint8_t fifo_status = readRegister(NRF_FIFO_STATUS);
 			if (fifo_status & 0x10)
@@ -348,7 +348,8 @@ void RADIO_Interrupt()
 		// packet not sent
 		if (status & 0x10)
 		{
-			TRACE("Radio: could not send packet\n");
+			//TRACE("Radio: could not send packet\n");
+			RADIO_CE_lo;
 			LED_Off(BLUE);
 			LED_On(RED);
 		}
@@ -373,7 +374,7 @@ void RADIO_Transmit(uint8_t *packet)
 	{
 		
 		sendPayload(NRF_W_TX_PAYLOAD,RADIO_PACKET_SIZE,flash_packet);
-		
+		TRACE("CATCH UP PACKET\n");
 		fifo_status  = readRegister(NRF_FIFO_STATUS);
 		
 	}
@@ -383,14 +384,16 @@ void RADIO_Transmit(uint8_t *packet)
 	{
 		// write to flash
 		FLASH_Push(packet);
+		TRACE("PUSHING PACKET\n");
 	}
 	else
 	{
 		sendPayload(NRF_W_TX_PAYLOAD,RADIO_PACKET_SIZE,packet);
+		TRACE("Radio: transmitting packet(s)\n");
 	}
 	
 	// send payload to chip
-	TRACE("Radio: transmitting packet(s)\n");
+	
 	
 	LED_On(BLUE);
 	
