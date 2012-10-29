@@ -3,7 +3,7 @@
 
 #define NODE_ID 2
 #define NODE_CH 2
-#define BS // GPS / BS
+#define GPS // GPS / BS
 //#define TRACE_OFF
 
 #endif

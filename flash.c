@@ -270,8 +270,8 @@ void FLASH_Push(uint8_t *payload)
 	
 	uint8_t addr[3];
 	addr[0] = 0xFF & (write_addr);
-	addr[1] = 0xFF & (write_addr >> 2);
-	addr[2] = 0XFF & (write_addr >> 4);
+	addr[1] = 0xFF & (write_addr >> 8);
+	addr[2] = 0XFF & (write_addr >> 16);
 	
 	WRITE(addr,FLASH_PACKET_SIZE,payload);
 	write_addr = ((write_addr + FLASH_PACKET_SIZE) % FLASH_LENGTH);
@@ -288,8 +288,8 @@ uint8_t FLASH_Pop(uint8_t *payload)
 	
 	uint8_t addr[3];
 	addr[0] = 0xFF & (read_addr);
-	addr[1] = 0xFF & (read_addr >> 2);
-	addr[2] = 0XFF & (read_addr >> 4);
+	addr[1] = 0xFF & (read_addr >> 8);
+	addr[2] = 0XFF & (read_addr >> 16);
 	
 	READ(addr,FLASH_PACKET_SIZE,payload);
 	read_addr = ((read_addr + FLASH_PACKET_SIZE) % FLASH_LENGTH);
