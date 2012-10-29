@@ -87,17 +87,13 @@ efm32lib/src/efm32_int.c \
 efm32lib/src/efm32_emu.c \
 efm32lib/src/efm32_adc.c \
 efm32lib/src/efm32_rtc.c \
+MAG3110.c\
+i2cdrv.c\
+display.c\
 main.c \
 radio.c \
 led.c \
 trace.c
-
-ifeq ($BASE,"")
-	C_SRC += main.c
-else
-	C_SRC += mainbase.c
-endif
-
 
 S_SRC +=  \
 CMSIS/CM3/DeviceSupport/EnergyMicro/EFM32/startup/cs3/startup_efm32.s

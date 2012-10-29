@@ -18,6 +18,9 @@ Main file for SLIP D embedded software
 #include "efm32_adc.h"
 #include "efm32_timer.h"
 
+#include "display.h"
+#include "MAG3110.h"
+
 #include <stdint.h>
 
 #include "radio.h"
@@ -25,6 +28,9 @@ Main file for SLIP D embedded software
 #include "trace.h"
 
 /* variables */
+DISPLAY_Message displayMessage;
+uint8_t buf[192*2];
+Mag_Vector_Type magReading;
 
 
 /* prototypes */
@@ -125,6 +131,7 @@ void InitClocks()
 	
 	// enable clock to GPIO
 	CMU_ClockEnable(cmuClock_GPIO, true);
+        
 	
 	// enable clock to RTC
 	CMU_ClockEnable(cmuClock_RTC, true);
@@ -134,6 +141,9 @@ void InitClocks()
 	CMU_ClockEnable(cmuClock_UART1, true);
 	CMU_ClockEnable(cmuClock_USART2, true);
 	
+        // enable I2C
+        CMU_ClockEnable(cmuClock_I2C0, true);
+        CMU_ClockEnable(cmuClock_TIMER0, true);
 }
 
 int main()
@@ -154,18 +164,28 @@ int main()
 	
 	// init LEDs
 	LED_Init();
-	
+        
 	// show startup LEDs
 	startupLEDs();
 	
 	// enable gpio interrupts
 	NVIC_ClearPendingIRQ(GPIO_EVEN_IRQn);
 	NVIC_ClearPendingIRQ(GPIO_ODD_IRQn);
+        NVIC_ClearPendingIRQ(TIMER0_IRQn);
+        NVIC_EnableIRQ(TIMER0_IRQn);
 	
 	// init radio
-	RADIO_Init();
-	TRACE("Radio started\n");
-	
+	//RADIO_Init();
+	//TRACE("Radio started\n");
+     
+        // init display
+        DISPLAY_Init();
+        DISPLAY_InitMessage(&displayMessage);
+        
+        // init MAG
+        MAGInit(); // Set up magnetometer
+        MAGRegReadN(OUT_X_MSB_REG, 6, buf); // Read MSB of X 
+        
 	NVIC_EnableIRQ(GPIO_EVEN_IRQn);
 	NVIC_EnableIRQ(GPIO_ODD_IRQn);
 	
@@ -176,35 +196,36 @@ int main()
 	LED_Off(BLUE);
 	LED_Off(GREEN);
 	
-	#ifdef SENDER
-	RTC_CounterReset();
-	while (1)
-	{
-		
-		// update color
-		color = (color + 1) % 3;
-		TRACE("Main: updating color\n");
-		
-		// show color
-		updateLEDs(color);
-		
-		// send color
-		packet[0] = color;
-		TRACE("Main: sending packet\n");
-		RADIO_Transmit(packet);
-		
-		// wait
-		while (RTC_CounterGet() < 32768);
-		RTC_CounterReset();
-		
-	}
-	#elif defined RECEIVER
+        
+        MAGRegReadN(OUT_X_MSB_REG, 6, buf);
+        magReading.x = buf[0]<<8 | buf[1];
+        magReading.y = buf[2]<<8 | buf[3];
+        magReading.z = buf[4]<<8 | buf[5];
+        
+        displayMessage.topLine=true;
+        
+        uint8_t status = 0x00;
+        int i;
+        
 	while(1)
-	{
-		
-		RADIO_Main();
-		
-	}
-	#endif
-	
+        {
+            if(MAGRegRead(DR_STATUS_REG) & 0x08)
+            {
+                TRACE("MAG UPDATE AVAILABLE\n");
+                MAGRegReadN(OUT_X_MSB_REG, 6, buf);
+                magReading.x = buf[0]<<8 | buf[1];
+                magReading.y = buf[2]<<8 | buf[3];
+                magReading.z = buf[4]<<8 | buf[5];
+                displayMessage.message = ("MAG UPDATE AVAILABLE\n");
+                DISPLAY_SetMessage(&displayMessage); 
+            }
+            else
+            {
+                TRACE("NO MAG UPDATE AVAILABLE\n");
+                displayMessage.message = ("NO MAG UPDATE AVAILABLE\n");
+                DISPLAY_SetMessage(&displayMessage); 
+            }
+            DISPLAY_Update(); 
+            for(i = 0; i < 0xFFFFFF; i++);
+        }
 }
