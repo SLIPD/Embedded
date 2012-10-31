@@ -13,6 +13,8 @@
 #ifdef	__cplusplus
 extern "C" {
 #endif
+    
+#define PI 3.14159265
 
 #define MAG3110_ADDR 0x0E
 #define MAG3110_ADDR_WRITE 0x1C

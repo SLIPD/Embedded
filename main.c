@@ -13,15 +13,18 @@ Main file for SLIP D embedded software
 #include "efm32_gpio.h"
 #include "efm32_i2c.h"
 #include "efm32_usart.h"
-#include "efm32_rtc.h"
+#include "efm32_rtc.h"  
 #include "efm32_cmu.h"
 #include "efm32_adc.h"
 #include "efm32_timer.h"
 
 #include "display.h"
 #include "MAG3110.h"
+#include "MMA845XQ.h"
 
 #include <stdint.h>
+#include <math.h>
+
 
 #include "radio.h"
 #include "led.h"
@@ -31,8 +34,9 @@ Main file for SLIP D embedded software
 DISPLAY_Message displayMessage;
 uint8_t buf[192*2];
 Mag_Vector_Type magReading;
+Accel_Vector_Type accelReading;
 char str [32];
-
+float heading, headingDegrees, declinationAngle;
 
 /* prototypes */
 void InitClocks();
@@ -41,7 +45,6 @@ void startupLEDs();
 void updateLEDs(uint8_t color);
 
 /* functions */
-
 void wait(uint32_t ms)
 {
 
@@ -224,6 +227,8 @@ int main()
 	LED_Off(BLUE);
 	LED_Off(GREEN);
         
+        declinationAngle = 58.47 / 1000;
+        
         MAGRegReadN(OUT_X_MSB_REG, 6, buf);
         magReading.x = buf[0]<<8 | buf[1];
         magReading.y = buf[2]<<8 | buf[3];
@@ -238,11 +243,21 @@ int main()
                 magReading.x = buf[0]<<8 | buf[1];
                 magReading.y = buf[2]<<8 | buf[3];
                 magReading.z = buf[4]<<8 | buf[5];
+                
+                heading = atan2(magReading.y, magReading.x);
+                heading -= declinationAngle;
+                if(heading < 0)
+                    heading+= 2*PI;
+                
+                if(heading > 2*PI)
+                    heading -=2*PI;
+                
+                headingDegrees = heading * 180/PI;
                 displayMessage.topLine=true;
                 displayMessage.message = ("YES\n");
                 DISPLAY_SetMessage(&displayMessage); 
                 displayMessage.topLine=false;
-                sprintf(str, "%+4i %+4i", magReading.x, magReading.y);
+                sprintf(str, "%.3f", headingDegrees);
                 displayMessage.message=(str);
                 DISPLAY_SetMessage(&displayMessage); 
             }

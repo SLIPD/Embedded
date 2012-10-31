@@ -56,7 +56,7 @@ LDFLAGS += -Xlinker -Map=$(LST_DIR)/$(PROJECTNAME).map -mcpu=cortex-m3 -mthumb \
 -L"$(TOOLDIR)/lib/gcc/arm-none-eabi/$(GCCVERSION)/thumb2" \
 -Wl,--gc-sections -Wl,--no-wchar-size-warning
 
-LIBS += -lc -lcs3 -lcs3unhosted
+LIBS += -lc -lcs3 -lcs3unhosted -lm
 
 INCLUDEPATHS += \
 -I.. \
@@ -66,7 +66,7 @@ INCLUDEPATHS += \
 -Iefm32lib/inc \
 -Iefm32usb/inc \
 -Ifatfs/src \
--Idrivers
+-Idrivers \
 
 ####################################################################
 # Files                                                            #
@@ -87,13 +87,14 @@ efm32lib/src/efm32_int.c \
 efm32lib/src/efm32_emu.c \
 efm32lib/src/efm32_adc.c \
 efm32lib/src/efm32_rtc.c \
+MMA845.c\
 MAG3110.c\
 i2cdrv.c\
 display.c\
 main.c \
 radio.c \
 led.c \
-trace.c
+trace.c 
 
 S_SRC +=  \
 CMSIS/CM3/DeviceSupport/EnergyMicro/EFM32/startup/cs3/startup_efm32.s
