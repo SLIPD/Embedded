@@ -1,4 +1,5 @@
-####################################################################
+#
+###################################################################
 # Makefile                                                         #
 ####################################################################
 
@@ -22,11 +23,8 @@ LST_DIR = lst
 ####################################################################
 
 # Change path to CodeSourcery tools according to your system configuration
-WINDOWSCS = C:/CodeSourcery/Sourcery_CodeBench_Lite_for_ARM_EABI
-LINUXCS   = /cad/codesourcery/arm-none-eabi/arm-2010q1
 GCCVERSION = $(shell $(CC) -dumpversion)
-
-TOOLDIR = C:/CodeSourcery/Sourcery_CodeBench_Lite_for_ARM_EABI
+TOOLDIR = ~/Developer/Cross/arm-cs-tools-2011.09-69-0084249-20121012
 RM = rm -rf
 
 CC      = $(QUOTE)$(TOOLDIR)/bin/arm-none-eabi-gcc$(QUOTE)
@@ -87,19 +85,15 @@ efm32lib/src/efm32_int.c \
 efm32lib/src/efm32_emu.c \
 efm32lib/src/efm32_adc.c \
 efm32lib/src/efm32_rtc.c \
-main.c \
 radio.c \
 led.c \
-trace.c \
-i2cdrv.c \
-display.c
+trace.c 
 
 ifeq ($BASE,"")
 	C_SRC += main.c
 else
 	C_SRC += mainbase.c
 endif
-
 
 S_SRC +=  \
 CMSIS/CM3/DeviceSupport/EnergyMicro/EFM32/startup/cs3/startup_efm32.s
@@ -122,16 +116,19 @@ vpath %.c $(C_PATHS)
 vpath %.s $(S_PATHS)
 
 # Default build is debug build
-all:      debug
-
+all:    debug
+		
+		
 debug:    CFLAGS += -DDEBUG -O0 -g3
 debug:    $(OBJ_DIR) $(LST_DIR) $(EXE_DIR) $(EXE_DIR)/$(PROJECTNAME).bin
 
-release:  CFLAGS += -DNDEBUG -O3 
+release:  CFLAGS += -DNDEBUG -O3
 release:  $(OBJ_DIR) $(LST_DIR) $(EXE_DIR) $(EXE_DIR)/$(PROJECTNAME).bin
 
 base:     CFLAGS += -DDEBUG -O0 -g3
 base:     $(OBJ_DIR) $(LST_DIR) $(EXE_DIR) $(EXE_DIR)/$(PROJECTNAME).bin
+
+
 
 
 # Create directories
