@@ -32,10 +32,11 @@ Main file for SLIP D embedded software
 
 /* variables */
 DISPLAY_Message displayMessage;
-uint8_t buf[192*2];
+uint8_t buf[192];
 Mag_Vector_Type magReading;
 Accel_Vector_Type accelReading;
-char str [32];
+char t_str [32];
+char b_str [32];
 float heading, headingDegrees, declinationAngle;
 
 /* prototypes */
@@ -69,6 +70,22 @@ void wait(uint32_t ms)
 
 	}
 
+}
+
+void getMagReading()
+{
+                MAGRegReadN(OUT_X_MSB_REG, 6, buf);
+               /*
+                MAGRegReadN(OUT_X_MSB_REG, 1, buf[0]);
+                MAGRegReadN(OUT_X_LSB_REG, 1, buf[1]);
+                MAGRegReadN(OUT_Y_MSB_REG, 1, buf[2]);
+                MAGRegReadN(OUT_Y_LSB_REG, 1, buf[3]);
+                MAGRegReadN(OUT_Z_MSB_REG, 1, buf[4]);
+                MAGRegReadN(OUT_Z_LSB_REG, 1, buf[5]);
+                */
+                magReading.x = buf[0]<<8 | buf[1];
+                magReading.y = buf[2]<<8 | buf[3];
+                magReading.z = buf[4]<<8 | buf[5]; 
 }
 
 // messy interrupt handler
@@ -227,39 +244,45 @@ int main()
 	LED_Off(BLUE);
 	LED_Off(GREEN);
         
-        declinationAngle = 58.47 / 1000;
+        declinationAngle = 0 / 1000;
         
         MAGRegReadN(OUT_X_MSB_REG, 6, buf);
         magReading.x = buf[0]<<8 | buf[1];
         magReading.y = buf[2]<<8 | buf[3];
         magReading.z = buf[4]<<8 | buf[5];
-
+        
 	while(1)
         {
             if(MAGRegRead(DR_STATUS_REG) & 0x08)
             {
                // TRACE("MAG UPDATE AVAILABLE\n");
-                MAGRegReadN(OUT_X_MSB_REG, 6, buf);
+                MAGRegReadN(OUT_X_MSB_REG, 2, buf);
                 magReading.x = buf[0]<<8 | buf[1];
-                magReading.y = buf[2]<<8 | buf[3];
-                magReading.z = buf[4]<<8 | buf[5];
+                MAGRegReadN(OUT_Y_MSB_REG, 2, buf);
+                magReading.y = buf[0]<<8 | buf[1];
+                MAGRegReadN(OUT_Z_MSB_REG, 2, buf);
+                magReading.z = buf[0]<<8 | buf[1];
+                //getMagReading();
                 
                 heading = atan2(magReading.y, magReading.x);
-                heading -= declinationAngle;
+               // heading -= declinationAngle;
                 if(heading < 0)
                     heading+= 2*PI;
                 
-                if(heading > 2*PI)
-                    heading -=2*PI;
+                //if(heading > 2*PI)
+                 //   heading -=2*PI;
                 
-                headingDegrees = heading * 180/PI;
+                headingDegrees = heading * (180/PI);
                 displayMessage.topLine=true;
-                displayMessage.message = ("YES\n");
+                sprintf(t_str, "y %.2f x %.2f", magReading.y, magReading.x);
+                displayMessage.message=(t_str);
                 DISPLAY_SetMessage(&displayMessage); 
+                
                 displayMessage.topLine=false;
-                sprintf(str, "%.3f", headingDegrees);
-                displayMessage.message=(str);
+                sprintf(b_str, "%.2f %.2f", heading, headingDegrees);
+                displayMessage.message=(b_str);
                 DISPLAY_SetMessage(&displayMessage); 
+                wait(500);
             }
             else
             {
