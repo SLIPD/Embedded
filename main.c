@@ -17,6 +17,7 @@ Main file for SLIP D embedded software
 #include "efm32_cmu.h"
 #include "efm32_adc.h"
 #include "efm32_timer.h"
+#include "efm32_int.h"
 
 #include "display.h"
 #include "MAG3110.h"
@@ -32,10 +33,11 @@ Main file for SLIP D embedded software
 
 /* variables */
 DISPLAY_Message displayMessage;
-uint8_t buf[192];
+uint8_t buf[192*2];
 Mag_Vector_Type magReading;
 Accel_Vector_Type accelReading;
-char t_str [32];
+//char t_str [32];
+char t_str [192*2];
 char b_str [32];
 float heading, headingDegrees, declinationAngle;
 
@@ -70,22 +72,6 @@ void wait(uint32_t ms)
 
 	}
 
-}
-
-void getMagReading()
-{
-                MAGRegReadN(OUT_X_MSB_REG, 6, buf);
-               /*
-                MAGRegReadN(OUT_X_MSB_REG, 1, buf[0]);
-                MAGRegReadN(OUT_X_LSB_REG, 1, buf[1]);
-                MAGRegReadN(OUT_Y_MSB_REG, 1, buf[2]);
-                MAGRegReadN(OUT_Y_LSB_REG, 1, buf[3]);
-                MAGRegReadN(OUT_Z_MSB_REG, 1, buf[4]);
-                MAGRegReadN(OUT_Z_LSB_REG, 1, buf[5]);
-                */
-                magReading.x = buf[0]<<8 | buf[1];
-                magReading.y = buf[2]<<8 | buf[3];
-                magReading.z = buf[4]<<8 | buf[5]; 
 }
 
 // messy interrupt handler
@@ -159,16 +145,16 @@ void InitClocks()
   // starting HFXO, wait till stable
   CMU_OscillatorEnable(cmuOsc_HFXO, true, true);
 	
-	// route HFXO to CPU
-	CMU_ClockSelectSet(cmuClock_HF, cmuSelect_HFXO);
+  // route HFXO to CPU
+  CMU_ClockSelectSet(cmuClock_HF, cmuSelect_HFXO);
 	
   /* Routing the LFXO clock to the RTC */
   CMU_ClockSelectSet(cmuClock_LFA, cmuSelect_LFXO);
   CMU_ClockSelectSet(cmuClock_LFB, cmuSelect_LFXO);
   
   // disabling the RCs
-	CMU_ClockEnable(cmuSelect_HFRCO, false);
-	CMU_ClockEnable(cmuSelect_LFRCO, false);
+  CMU_ClockEnable(cmuSelect_HFRCO, false);
+  CMU_ClockEnable(cmuSelect_LFRCO, false);
 
   /* Enabling clock to the interface of the low energy modules */
   CMU_ClockEnable(cmuClock_CORE, true);
@@ -176,27 +162,29 @@ void InitClocks()
   
   // enable clock to hf perfs
   CMU_ClockEnable(cmuClock_HFPER, true);
-	
-	// enable clock to GPIO
-	CMU_ClockEnable(cmuClock_GPIO, true);
-        
-	
-	// enable clock to RTC
-	CMU_ClockEnable(cmuClock_RTC, true);
-	RTC_Enable(true);
-	
-	// enable clock to USARTs
-	CMU_ClockEnable(cmuClock_UART1, true);
-	CMU_ClockEnable(cmuClock_USART2, true);
-	
-        // enable I2C
-        CMU_ClockEnable(cmuClock_I2C0, true);
-        CMU_ClockEnable(cmuClock_TIMER0, true);
+
+  // enable clock to GPIO
+  CMU_ClockEnable(cmuClock_GPIO, true);
+
+
+  // enable clock to RTC
+  CMU_ClockEnable(cmuClock_RTC, true);
+  RTC_Enable(true);
+
+  // enable clock to USARTs
+  CMU_ClockEnable(cmuClock_UART1, true);
+  CMU_ClockEnable(cmuClock_USART2, true);
+
+  // enable I2C
+  CMU_ClockEnable(cmuClock_I2C0, true);
+  CMU_ClockEnable(cmuClock_TIMER0, true);
+  
 }
 
 int main()
 {
 	
+    uint8_t verbose = 1;
 	// Chip errata
 	CHIP_Init();
 	
@@ -216,23 +204,47 @@ int main()
 	// show startup LEDs
 	startupLEDs();
 	
+	if(verbose) TRACE("A\n");
+	
 	// enable gpio interrupts
 	NVIC_ClearPendingIRQ(GPIO_EVEN_IRQn);
 	NVIC_ClearPendingIRQ(GPIO_ODD_IRQn);
         NVIC_ClearPendingIRQ(TIMER0_IRQn);
         NVIC_EnableIRQ(TIMER0_IRQn);
 	
-	// init radio
-	//RADIO_Init();
-	//TRACE("Radio started\n");
-     
-        // init display
-        DISPLAY_Init();
-        DISPLAY_InitMessage(&displayMessage);
+	if(verbose) TRACE("B\n");
+        // init display AND I2C
+//        DISPLAY_Init();
+//        DISPLAY_InitMessage(&displayMessage);
         
+	// init reset pin
+	GPIO_PinModeSet(gpioPortD,10,gpioModePushPull,1);
+	GPIO_PinModeSet(gpioPortD, 15, gpioModeWiredAnd, 1);
+	GPIO_PinModeSet(gpioPortD, 14, gpioModeWiredAnd, 1);
+
+	// init i2c
+	I2C0->ROUTE |= I2C_ROUTE_SDAPEN | I2C_ROUTE_SCLPEN | I2C_ROUTE_LOCATION_LOC3;
+
+	I2C_Init_TypeDef i2cInit = I2C_INIT_DEFAULT;
+
+	I2C_Init(I2C0, &i2cInit);
+        
+	if(verbose) TRACE("C\n");
         // init MAG
         MAGInit(); // Set up magnetometer
+        
+	if(verbose) TRACE("D\n");
         MAGRegReadN(OUT_X_MSB_REG, 6, buf); // Read MSB of X 
+        uint8_t a = MAGRegRead(WHO_AM_I);
+        sprintf(t_str, "MAG3110 WHO AM I: 0x%2x\n", a);
+        TRACE(t_str);
+        
+        // init MMA
+        MMAInit(); // Set up accelerometer
+        MMARegReadN(OUT_X_MSB_REG, 6, buf); // Read MSB of X 
+        a = MMARegRead(WHO_AM_I_REG);
+        sprintf(t_str, "MMA WHO AM I: 0x%2x\n", a);
+        TRACE(t_str);
         
 	NVIC_EnableIRQ(GPIO_EVEN_IRQn);
 	NVIC_EnableIRQ(GPIO_ODD_IRQn);
@@ -246,33 +258,39 @@ int main()
         
         declinationAngle = 0 / 1000;
         
-        MAGRegReadN(OUT_X_MSB_REG, 6, buf);
-        magReading.x = buf[0]<<8 | buf[1];
-        magReading.y = buf[2]<<8 | buf[3];
-        magReading.z = buf[4]<<8 | buf[5];
-        
+        INT_Enable();
 	while(1)
         {
-            if(MAGRegRead(DR_STATUS_REG) & 0x08)
+            // If there is new ZYX data available
+            if(MAGRegRead(DR_STATUS_REG) & ZYXDR_MASK)
             {
                // TRACE("MAG UPDATE AVAILABLE\n");
+                /*
                 MAGRegReadN(OUT_X_MSB_REG, 2, buf);
-                magReading.x = buf[0]<<8 | buf[1];
+                magReading.x = buf[0]<<8 | buf[1];;
+                sprintf(t_str, "x %.2f\n", magReading.x);
+                TRACE(t_str);   
                 MAGRegReadN(OUT_Y_MSB_REG, 2, buf);
                 magReading.y = buf[0]<<8 | buf[1];
+                sprintf(t_str, "x %.2f\n", magReading.y);
+                TRACE(t_str);   
                 MAGRegReadN(OUT_Z_MSB_REG, 2, buf);
                 magReading.z = buf[0]<<8 | buf[1];
-                //getMagReading();
-                
+                sprintf(t_str, "x %.2f\n", magReading.z);
+                TRACE(t_str);   
+                 
+                /*
                 heading = atan2(magReading.y, magReading.x);
-               // heading -= declinationAngle;
+                heading -= declinationAngle;
                 if(heading < 0)
                     heading+= 2*PI;
                 
-                //if(heading > 2*PI)
-                 //   heading -=2*PI;
-                
+                if(heading > 2*PI)
+                    heading -=2*PI;
+               
                 headingDegrees = heading * (180/PI);
+                */
+                /*  
                 displayMessage.topLine=true;
                 sprintf(t_str, "y %.2f x %.2f", magReading.y, magReading.x);
                 displayMessage.message=(t_str);
@@ -282,15 +300,24 @@ int main()
                 sprintf(b_str, "%.2f %.2f", heading, headingDegrees);
                 displayMessage.message=(b_str);
                 DISPLAY_SetMessage(&displayMessage); 
+                */
+                
+                
+                MAGRegReadN(OUT_X_MSB_REG, 6, buf);
+                magReading.x = buf[0]<<8 | buf[1];
+                magReading.y = buf[2]<<8 | buf[3];
+                magReading.z = buf[4]<<8 | buf[5];
+                sprintf(t_str, "x %u, y %u, z %u\n", magReading.x, magReading.y, magReading.z);
+                TRACE(t_str); 
                 wait(500);
             }
             else
             {
-               // TRACE("NO MAG UPDATE AVAILABLE\n");
-                displayMessage.message = ("NO\n");
-                DISPLAY_SetMessage(&displayMessage); 
+                TRACE("NO MAG UPDATE AVAILABLE\n");
+               // displayMessage.message = ("NO\n");
+                //DISPLAY_SetMessage(&displayMessage); 
             }
-            DISPLAY_Update(); 
+            //DISPLAY_Update(); 
             wait(1000);
         }
 }
