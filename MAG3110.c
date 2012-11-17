@@ -134,6 +134,7 @@ void MAGInit(void)
     // MAGRegWrite(0x2E, INT_EN_DRDY_MASK); //Set the interrupt to route to INT1
     // MAGRegWrite(0x2E, INT_EN_DRDY_MASK); //Set the interrupt to route to INT1
     MAGRegWrite(CTRL_REG2, (MAGRegRead(CTRL_REG2) | AUTO_MRST_MASK )); // Activate automatic magnetic sensor resets
+    MAGRegWrite(CTRL_REG2, (MAGRegRead(CTRL_REG2) | RAW_MASK )); // Activate raw mode
     MAGRegWrite(CTRL_REG1, (MAGRegRead(CTRL_REG1) & ~ODR_MASK)); // Active ODR, 80Hz
     MAGRegWrite(CTRL_REG1, (MAGRegRead(CTRL_REG1) & ~OS_MASK)); // Active OS, 1
     MAGRegWrite(CTRL_REG1, (MAGRegRead(CTRL_REG1) & ~FR_MASK)); // Deactivate Fast Read

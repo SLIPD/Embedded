@@ -40,6 +40,10 @@ Accel_Vector_Type accelReading;
 char t_str [192*2];
 char b_str [32];
 float heading, headingDegrees, declinationAngle;
+float rotMatrix[3][3];
+int16_t xEl[500], yEl[500], zEl[500];
+int16_t xOff, yOff, zOff;
+float g = 9.81;
 
 /* prototypes */
 void InitClocks();
@@ -73,6 +77,44 @@ void wait(uint32_t ms)
 	}
 
 }
+
+void quickSort(int16_t x[500],int first,int last)
+{
+    int pivot, j, temp, i;
+
+     if(first < last)
+     {
+         pivot = first;
+         i = first;
+         j = last;
+
+         while(i < j)
+         {
+             while(x[i] <= x[pivot] && i < last)
+                 i++;
+             while(x[j] > x[pivot])
+                 j--;
+             if(i < j){
+                 temp = x[i];
+                  x[i] = x[j];
+                  x[j] = temp;
+             }
+         }
+
+         temp = x[pivot];
+         x[pivot] = x[j];
+         x[j] = temp;
+         quickSort(x, first, j-1);
+         quickSort(x, j+1, last);
+    }
+}
+    
+void sortEllipsis()
+{
+    quickSort(xEl, 0, 499);
+    quickSort(yEl, 0, 499);
+    quickSort(zEl, 0, 499);
+}       
 
 // messy interrupt handler
 void GPIO_EVEN_IRQHandler(void) 
@@ -113,7 +155,6 @@ void updateLEDs(uint8_t color)
 
 void startupLEDs()
 {
-	
 	LED_Off(RED);
 	LED_Off(BLUE);
 	LED_Off(GREEN);
@@ -134,7 +175,6 @@ void startupLEDs()
 	
 	time = RTC_CounterGet();
 	while (RTC_CounterGet() < time + 32768);
-	
 }
 
 void InitClocks()
@@ -181,6 +221,16 @@ void InitClocks()
   
 }
 
+void initMatrix()
+{
+    int i, j;
+    for (i = 0; i < 3; i++)
+    {
+        for(j = 0; j < 3; j++) 
+            rotMatrix[i][j] = 0;
+    }
+}
+
 int main()
 {
 	
@@ -211,7 +261,8 @@ int main()
 	NVIC_ClearPendingIRQ(GPIO_ODD_IRQn);
         NVIC_ClearPendingIRQ(TIMER0_IRQn);
         NVIC_EnableIRQ(TIMER0_IRQn);
-	
+	initMatrix();
+        
 	if(verbose) TRACE("B\n");
         // init display AND I2C
 //        DISPLAY_Init();
@@ -258,27 +309,129 @@ int main()
         
         declinationAngle = 0 / 1000;
         
+        int count = 0;
+        
         INT_Enable();
+        
+        if(0)
+        //while(count<500)
+        {
+            if(MAGRegRead(DR_STATUS_REG) & ZYXDR_MASK)
+            {
+                MAGRegReadN(OUT_X_MSB_REG, 6, buf);
+                magReading.x = buf[0]<<8 | buf[1];
+                magReading.y = buf[2]<<8 | buf[3];
+                magReading.z = buf[4]<<8 | buf[5];
+                xEl[count] = magReading.x;
+                yEl[count] = magReading.y;
+                zEl[count] = magReading.z;                       
+                sprintf(t_str, "Ell x %d, y %d, z %d\n",   xEl[count],  yEl[count], zEl[count]);
+                TRACE(t_str);
+                count++;
+            }
+                
+        }
+        
+//        sortEllipsis();
+//        
+//        TRACE("Sorted!\n");
+//        
+//        xOff = (xEl[0] + xEl[499])/2;
+//        yOff = (yEl[0] + yEl[499])/2;
+//        zOff = (zEl[0] + zEl[499])/2;
+//        
+//        MAGRegWrite(OFF_X_MSB , xOff >> 8); 
+//        sprintf(t_str, "OFF_X_MSB 0x%2.2x %d\n", (xOff >> 8) & 0xFF, (xOff >> 8) & 0xFF);
+//        TRACE(t_str);
+//        MAGRegWrite(OFF_X_LSB , xOff & 0xFF); 
+//        sprintf(t_str, "OFF_X_LSB 0x%2.2x %d\n",  xOff & 0xFF,  xOff & 0xFF);
+//        TRACE(t_str);
+//        sprintf(t_str, "OFF_X 0x%4.4x %d\n\n",  xOff & 0xFFFF, xOff & 0xFFFF);
+//        TRACE(t_str);
+//        
+//        MAGRegWrite(OFF_Y_MSB , yOff >> 8); 
+//        sprintf(t_str, "OFF_Y_MSB 0x%2.2x %d\n", (yOff >> 8) & 0xFF, (yOff >> 8) & 0xFF);
+//        TRACE(t_str);
+//        MAGRegWrite(OFF_Y_LSB , yOff  & 0xFF); 
+//        sprintf(t_str, "OFF_Y_LSB 0x%2.2x %d\n",  yOff & 0xFF,  yOff & 0xFF);
+//        TRACE(t_str);
+//        sprintf(t_str, "OFF_Y 0x%4.4x %d\n\n",  yOff & 0xFFFF, yOff & 0xFFFF);
+//        TRACE(t_str);
+//        
+//        MAGRegWrite(OFF_Z_MSB , zOff >> 8); 
+//        sprintf(t_str, "OFF_Z_MSB 0x%2.2x %d\n",  (zOff >> 8) & 0xFF,  (zOff >> 8) & 0xFF);
+//        TRACE(t_str);
+//        MAGRegWrite(OFF_Z_LSB , zOff  & 0xFF); 
+//        sprintf(t_str, "OFF_Z_LSB 0x%2.2x %d\n", zOff & 0xFF, zOff & 0xFF);
+//        TRACE(t_str);
+//        sprintf(t_str, "OFF_Z 0x%4.4x %d\n\n",  zOff & 0xFFFF, zOff & 0xFFFF);
+//        TRACE(t_str);
+        
 	while(1)
         {
             // If there is new ZYX data available
-            if(MAGRegRead(DR_STATUS_REG) & ZYXDR_MASK)
+            if(0)
+            //if(MAGRegRead(DR_STATUS_REG) & ZYXDR_MASK)
             {
                // TRACE("MAG UPDATE AVAILABLE\n");
+                MAGRegReadN(OUT_X_MSB_REG, 6, buf);
+                magReading.x = buf[0]<<8 | buf[1];
+                magReading.y = buf[2]<<8 | buf[3];
+                magReading.z = buf[4]<<8 | buf[5];
+                if(1)
+                {
+                        TRACE("Mag ");
+                        sprintf(t_str, "x %d, y %d, z %d\n", magReading.x, magReading.y, magReading.z);
+                        TRACE(t_str);  
+                }       
+                
+                MMARegReadN(OUT_X_MSB_REG, 6, buf);
+                accelReading.x = buf[0]<<8 | buf[1];
+                accelReading.y = buf[2]<<8 | buf[3];
+                accelReading.z = buf[4]<<8 | buf[5];
+                if(0)
+                { 
+                        TRACE("Accel ");
+                        sprintf(t_str, "x %d, y %d, z %d\n", accelReading.x, accelReading.y, accelReading.z);
+                        TRACE(t_str);  
+                }
+                
+                heading = 0; 
+                
                 /*
-                MAGRegReadN(OUT_X_MSB_REG, 2, buf);
-                magReading.x = buf[0]<<8 | buf[1];;
-                sprintf(t_str, "x %.2f\n", magReading.x);
-                TRACE(t_str);   
-                MAGRegReadN(OUT_Y_MSB_REG, 2, buf);
-                magReading.y = buf[0]<<8 | buf[1];
-                sprintf(t_str, "x %.2f\n", magReading.y);
-                TRACE(t_str);   
-                MAGRegReadN(OUT_Z_MSB_REG, 2, buf);
-                magReading.z = buf[0]<<8 | buf[1];
-                sprintf(t_str, "x %.2f\n", magReading.z);
-                TRACE(t_str);   
+                if ((magReading.x == 0)&&(magReading.y < 0))   
+                    heading = PI/2.0;  
+                else if ((magReading.x == 0)&&(magReading.y > 0))               
+                    heading=3.0*PI/2.0;  
+                else if (magReading.x < 0)                                 
+                    heading = PI - atan(magReading.y/magReading.x);  
+                else if ((magReading.x > 0)&&(magReading.y < 0))           
+                    heading = -atan(magReading.y/magReading.x);  
+                else if ((magReading.x > 0)&&(magReading.y > 0))           
+                    heading = 2.0*PI - atan(magReading.y/magReading.x);
+                else
+                    TRACE("FAILED\n");
+                */
+                
+                
+                
+                
+                if(magReading.y > 0)                            heading = 90 - (atan2(magReading.y,magReading.x)) * (180 / PI);
+                else if (magReading.y < 0)                      heading = 270 - (atan2(magReading.y,magReading.x)) * (180 / PI);
+                else if (magReading.y = 0 && magReading.x < 0)  heading = 180.0;
+                else if (magReading.y = 0 && magReading.x > 0)  heading = 0.0;
+                else
+                {
+                    TRACE("No constraint satisfied\n");
+                }
+                
+                if(heading < 0)        heading+= 360;
+                if(heading > 360)      heading-= 360;
                  
+                
+                
+                
+                
                 /*
                 heading = atan2(magReading.y, magReading.x);
                 heading -= declinationAngle;
@@ -289,7 +442,25 @@ int main()
                     heading -=2*PI;
                
                 headingDegrees = heading * (180/PI);
+                
+                sprintf(t_str, "heading %.2f, deg %.2f\n", heading, headingDegrees);
                 */
+                
+                
+                
+                if(heading < 0)
+                    heading+= 2*PI;
+                
+                if(heading > 2*PI)
+                    heading -=2*PI;
+               
+                headingDegrees = heading * (180/PI);
+                sprintf(t_str, "heading %.2f, deg %.2f\n", heading, headingDegrees);
+                TRACE(t_str);
+                
+                
+                
+                
                 /*  
                 displayMessage.topLine=true;
                 sprintf(t_str, "y %.2f x %.2f", magReading.y, magReading.x);
@@ -302,18 +473,22 @@ int main()
                 DISPLAY_SetMessage(&displayMessage); 
                 */
                 
-                
-                MAGRegReadN(OUT_X_MSB_REG, 6, buf);
-                magReading.x = buf[0]<<8 | buf[1];
-                magReading.y = buf[2]<<8 | buf[3];
-                magReading.z = buf[4]<<8 | buf[5];
-                sprintf(t_str, "x %u, y %u, z %u\n", magReading.x, magReading.y, magReading.z);
-                TRACE(t_str); 
                 wait(500);
             }
             else
             {
-                TRACE("NO MAG UPDATE AVAILABLE\n");
+               //TRACE("NO MAG UPDATE AVAILABLE\n");
+                  
+                MMARegReadN(OUT_X_MSB_REG, 6, buf);
+                accelReading.x = buf[0]<<8 | buf[1];
+                accelReading.y = buf[2]<<8 | buf[3];
+                accelReading.z = buf[4]<<8 | buf[5];
+                if(1)
+                { 
+                        TRACE("Accel ");
+                        sprintf(t_str, "x %d, y %d, z %d\n", accelReading.x, accelReading.y, accelReading.z);
+                        TRACE(t_str);  
+                }
                // displayMessage.message = ("NO\n");
                 //DISPLAY_SetMessage(&displayMessage); 
             }
