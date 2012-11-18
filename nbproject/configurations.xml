@@ -3,6 +3,10 @@
   <logicalFolder name="root" displayName="root" projectFiles="true" kind="ROOT">
     <df name="sliprepo" root=".">
       <df name="build">
+        <in>core_cm3.d</in>
+        <in>efm32_assert.d</in>
+        <in>efm32_system.d</in>
+        <in>system_efm32.d</in>
       </df>
       <df name="CMSIS">
         <df name="CM3">
@@ -128,6 +132,8 @@
       <in>MMA845XQ.h</in>
       <in>display.c</in>
       <in>display.h</in>
+      <in>eCompass.c</in>
+      <in>eCompass.h</in>
       <in>i2cdrv.c</in>
       <in>i2cdrv.h</in>
       <in>led.c</in>

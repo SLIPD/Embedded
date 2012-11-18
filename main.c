@@ -277,7 +277,7 @@ int main()
            
             int16_t heading = ieCompass(magReading.x, magReading.y, magReading.z, accelReading.x, accelReading.y, accelReading.z);
 
-            sprintf(t_str,"heading 0x%4.4x %d Degrees\n", heading, heading/100);
+            sprintf(t_str,"heading 0x%4.4x %d Degrees\n", heading, heading);
             TRACE(t_str);
             
             wait(1000);

@@ -9,6 +9,11 @@ int16_t iBfx, iBfy, iBfz;
 // Hard iron estimate
 int16_t iVx, iVy, iVz;
 
+
+const int16_t K1 = 5701;
+const int16_t K2 = -1645;
+const int16_t K3  = 446;
+
 /* iTrig
  * ix, iy: int16_t representing sensor reading in range of -32768 to 32767
  * function returns int16_t as signed fraction
@@ -227,10 +232,10 @@ int16_t ieCompass(int16_t magX, int16_t magY, int16_t magZ, int16_t accelX, int1
     
     int16_t iSin, iCos;
         
-        // Hard iron off setting here if done
-//        accelReading.x -= iVx;
-//        accelReading.y -= iVy;
-//        accelReading.z -= iVz;
+    // Hard iron off setting here if done
+//    accelX -= iVx;
+//    accelY -= iVy;
+//    accelZ -= iVz;
     
     iPhi = iHundredAtan2Deg(accelY, accelZ);
 

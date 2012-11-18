@@ -19,9 +19,6 @@ extern "C" {
 // consts
     
 #define MINDELTATRIG 1 
-#define K1 5701
-#define K2 -1645
-#define K3 446
 #define MINDELTADIV 1
     
 // prototypes
