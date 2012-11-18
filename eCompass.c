@@ -1,6 +1,4 @@
 #include "eCompass.h"
-
-
 // Source: AN4248
 
 /* iTrig
@@ -75,7 +73,7 @@ int16_t iTrig(int16_t ix, int16_t iy)
         }
         idelta = (int16_t)(idelta >> 1); // divide by 2
         
-    } while (idelta >= 1); // 1 should be MINDELTATRIG
+    } while (idelta >= MINDELTATRIG);
     
     // correct sign
     return (int16_t)(ir * isignx);
@@ -125,9 +123,6 @@ int16_t iHundredAtan2Deg(int16_t iy, int16_t ix)
     
     return iResult;
 }
-
-
-
 
 /* iHundredAtanDeg
  * calculates 100 * atan(iy/ix) range 0 to 9000

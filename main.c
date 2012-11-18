@@ -5,8 +5,11 @@ Main file for SLIP D embedded software
 */
 
 /* includes */
-#include "efm32.h"
+/* Standard libraries */
+#include <stdint.h>
+#include <math.h>
 
+/* EFM libraries */
 #include "efm32.h"
 #include "efm32_chip.h"
 #include "efm32_emu.h"
@@ -19,33 +22,30 @@ Main file for SLIP D embedded software
 #include "efm32_timer.h"
 #include "efm32_int.h"
 
-#include "display.h"
-#include "MAG3110.h"
-#include "MMA845XQ.h"
-
-#include <stdint.h>
-#include <math.h>
-
-
+/* SLIP D Embedded libraries*/
 #include "radio.h"
 #include "led.h"
 #include "trace.h"
+#include "display.h"
+
+/* Custom libraries */
+#include "MAG3110.h"
+#include "MMA845XQ.h"
+#include "eCompass.h"
+
 
 /* variables */
 DISPLAY_Message displayMessage;
 uint8_t buf[192*2];
 Mag_Vector_Type magReading;
-Accel_Vector_Type accelReading, accelBase;
-int16_t angleX, angleY;
+Accel_Vector_Type accelReading;
 
 char t_str [192*2];
 
 // Roll, pitch and yaw angles computed by 1ecompass
 int16_t iPhi, iThe, iPsi;
-
-// Magnetic fiedl readings corrected for hard iron effects and PCB orientation
+// Magnetic field readings corrected for hard iron effects and PCB orientation
 int16_t iBfx, iBfy, iBfz;
-
 // Hard iron estimate
 int16_t iVx, iVy, iVz;
 
@@ -81,32 +81,6 @@ void wait(uint32_t ms)
 		}
 
 	}
-
-}
-
-void calc_xy_angles(float xA, float yA, float zA)
-{
-    float x, y, z;
-    uint16_t x2, y2, z2;
-   
-    // Work out squares
-    x = xA - (float)accelBase.x;
-    y = yA - (float)accelBase.y;
-    z = zA - (float)accelBase.z;
-    
-    accelBase.x = (uint16_t) xA;
-    accelBase.y = (uint16_t) yA;
-    accelBase.z = (uint16_t) zA;
-   
-    x2 = (uint16_t) (x*x);
-    y2 = (uint16_t) (y*y);
-    z2 = (uint16_t) (z*z);
-    
-    angleX = x / sqrt(y2 + z2);
-    angleY = y / sqrt(x2 + z2);
-    
-    sprintf(t_str, "x %d, y %d\n", angleX, angleY);
-    TRACE(t_str);
 }
 
 // messy interrupt handler
@@ -260,18 +234,21 @@ int main()
         // init MAG
         MAGInit(); // Set up magnetometer
         MAGRegReadN(OUT_X_MSB_REG, 6, buf); // Read MSB of X 
-        uint8_t a = MAGRegRead(WHO_AM_I);
-        sprintf(t_str, "MAG3110 WHO AM I: 0x%2x\n", a);
+        magReading.x = buf[0]<<8 | buf[1];
+        magReading.y = buf[2]<<8 | buf[3];
+        magReading.z = buf[4]<<8 | buf[5];
+        uint8_t id = MAGRegRead(WHO_AM_I);
+        sprintf(t_str, "MAG3110 WHO AM I: 0x%2x\n", id);
         TRACE(t_str);
         
         // init MMA
         MMAInit(); // Set up accelerometer
         MMARegReadN(OUT_X_MSB_REG, 6, buf); // Read MSB of X 
-        accelBase.x = buf[0]<<8 | buf[1];
-        accelBase.y = buf[2]<<8 | buf[3];
-        accelBase.z = buf[4]<<8 | buf[5];
-        a = MMARegRead(WHO_AM_I_REG);
-        sprintf(t_str, "MMA WHO AM I: 0x%2x\n", a);
+        accelReading.x = buf[0]<<8 | buf[1];
+        accelReading.y = buf[2]<<8 | buf[3];
+        accelReading.z = buf[4]<<8 | buf[5];
+        id = MMARegRead(WHO_AM_I_REG);
+        sprintf(t_str, "MMA WHO AM I: 0x%2x\n", id);
         TRACE(t_str);
         
 	NVIC_EnableIRQ(GPIO_EVEN_IRQn);
@@ -286,56 +263,82 @@ int main()
         
         INT_Enable();
         
+        // Hard iron off setting here if done
+//        accelReading.x -= iVx;
+//        accelReading.y -= iVy;
+//        accelReading.z -= iVz;
+        
 
 	while(1)
         {
-            
+            // If there is new ZYX data available, read
             if(MAGRegRead(DR_STATUS_REG) & ZYXDR_MASK)
             {
-                TRACE("Reading MAG!\n");
+                //TRACE("Reading MAG!\n");
                 MAGRegReadN(OUT_X_MSB_REG, 6, buf);
                 magReading.x = buf[0]<<8 | buf[1];
                 magReading.y = buf[2]<<8 | buf[3];
                 magReading.z = buf[4]<<8 | buf[5];
             }
-            // If there is new ZYX data available
+            
             if(MMARegRead(DR_STATUS_REG) & ZYXDR_MASK)
             {
-                TRACE("Reading MMA!\n");
+              //  TRACE("Reading MMA!\n");
                 MMARegReadN(OUT_X_MSB_REG, 6, buf);
                 accelReading.x = buf[0]<<8 | buf[1];
                 accelReading.y = buf[2]<<8 | buf[3];
                 accelReading.z = buf[4]<<8 | buf[5];
             }
             
-            iPhi = 100 * atan2(accelReading.y, accelReading.z) * (180 / PI);
-            
+            // Calculate roll angle Phi
+            iPhi = iHundredAtan2Deg(accelReading.y, accelReading.z);
             sprintf(t_str, "iPhi 0x%4.4x %d\n", iPhi, iPhi);
-            TRACE(t_str);
+            //TRACE(t_str);
             
-            iSin = accelReading.y / sqrt((accelReading.y * accelReading.y) + (accelReading.z * accelReading.z));
-            iCos = accelReading.z / sqrt((accelReading.y * accelReading.y) + (accelReading.z * accelReading.z));
+            // Calculate sin and cosine of roll angle Phi
+            iSin = iTrig(accelReading.y, accelReading.z);
+            iCos = iTrig(accelReading.z, accelReading.y);
             
-            iBfx = (int16_t) ((accelReading.y * iCos - accelReading.z * iSin) >> 15);
-            accelReading.z = (int16_t) ((accelReading.y * iSin + accelReading.z * iCos) >> 15);
+            // De rotate by roll angle Phi
+            iBfy = (int16_t) ((magReading.y * iCos - magReading.z * iSin) >> 15);
             magReading.z = (int16_t) ((magReading.y * iSin + magReading.z * iCos) >> 15);
+            accelReading.z = (int16_t) ((accelReading.y * iSin + accelReading.z * iCos) >> 15);
             
-            iThe = 100 * atan2(-magReading.x, magReading.z) * (180 / PI);
+            // Calculate pitch angle Theta
+            iThe = iHundredAtan2Deg((int16_t) -accelReading.x, accelReading.z);
+            
+            // restrict pitch angle
             if(iThe > 9000)
             {
                 iThe = (int16_t) (18000 - iThe);
-                TRACE("more than 9000\n");
+               // TRACE("more than 9000\n");
             } 
             else if (iThe < -9000)
             {
                 iThe = (int16_t) (-18000 - iThe);
-                TRACE("less than -9000\n");
+                //TRACE("less than -9000\n");
+            }
+            sprintf(t_str, "iThe 0x%4.4x %d\n", iThe, iThe);
+            //TRACE(t_str);
+            
+            // Calculate sin and cosine of Theta
+            iSin = (int16_t) -iTrig(accelReading.x, accelReading.z);
+            iCos = iTrig(accelReading.z, accelReading.x);
+            
+            // Correct cos if pitch in range
+            if (iCos < 0)
+            {
+                iCos = (int16_t) - iCos;
             }
             
-            iSin = - (magReading.x / sqrt ((magReading.x * magReading.x) + (magReading.z * magReading.z)));
-            iCos = magReading.z / sqrt ((magReading.x * magReading.x) + (magReading.z * magReading.z));
+            // de rotate by Theta
+            iBfx = (int16_t) ((magReading.x * iCos + magReading.z * iSin) >> 15);
+            iBfz = (int16_t) ((-magReading.x * iSin + magReading.z * iCos) >> 15);
             
-            sprintf(t_str, "iThe 0x%4.4x %d\n", iThe, iThe);
+            // Calculate current yaw = e-compass angle Psi
+            iPsi = iHundredAtan2Deg((int16_t)- iBfy, iBfx);
+            
+            sprintf(t_str, "iPsi 0x%4.4x %d Degrees\n", iPsi, iPsi/100);
             TRACE(t_str);
             
             wait(1000);

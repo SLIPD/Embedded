@@ -18,11 +18,11 @@ extern "C" {
     
 // consts
     
-const uint16_t MINDELTATRIG = 1; /* final step size for iTrig */
-const int16_t K1 = 5701;
-const int16_t K2 = -1645;
-const int16_t K3 = 446;
-const uint16_t MINDELTADIV = 1;
+#define MINDELTATRIG 1 
+#define K1 5701
+#define K2 -1645
+#define K3 46
+#define MINDELTADIV 1
     
 // prototypes
     
