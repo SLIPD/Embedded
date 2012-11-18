@@ -1,6 +1,14 @@
 #include "eCompass.h"
 // Source: AN4248
 
+
+// Roll, pitch and yaw angles computed by 1ecompass
+int16_t iPhi, iThe, iPsi;
+// Magnetic field readings corrected for hard iron effects and PCB orientation
+int16_t iBfx, iBfy, iBfz;
+// Hard iron estimate
+int16_t iVx, iVy, iVz;
+
 /* iTrig
  * ix, iy: int16_t representing sensor reading in range of -32768 to 32767
  * function returns int16_t as signed fraction
@@ -42,7 +50,7 @@ int16_t iTrig(int16_t ix, int16_t iy)
     }
     
     // set iy to be positive
-    iy = (int16_t) abs(iy);
+    iy = (int16_t)abs(iy);
     
     // reduce quantization effects, boost ix and iy but keep below int16_t
     while ((ix < 16384) && (iy < 16384))
@@ -53,7 +61,7 @@ int16_t iTrig(int16_t ix, int16_t iy)
     
     // calculate ix * ix and hyp * hyp
     ixsq = (uint32_t) (ix * ix);
-    ihypsq = (uint32_t) (ixsq + iy  * iy);
+    ihypsq = (uint32_t) (ixsq + iy * iy);
     
     // set result r to zero and binary search step to 16384 (0.5)
     ir = 0;
@@ -190,7 +198,7 @@ int16_t iDivide(int16_t iy, int16_t ix)
     int16_t idelta;
     
     // set result = 0
-    ir = 0;;
+    ir = 0;
     idelta = 16384;
     
     // to reduce quantization effects
@@ -212,4 +220,59 @@ int16_t iDivide(int16_t iy, int16_t ix)
     } while (idelta >= MINDELTADIV);
     
     return ir;
+}
+
+int16_t ieCompass(int16_t magX, int16_t magY, int16_t magZ, int16_t accelX, int16_t accelY, int16_t accelZ)
+{
+    
+    int16_t iSin, iCos;
+        
+        // Hard iron off setting here if done
+//        accelReading.x -= iVx;
+//        accelReading.y -= iVy;
+//        accelReading.z -= iVz;
+    
+    iPhi = iHundredAtan2Deg(accelY, accelZ);
+
+    // Calculate sin and cosine of roll angle Phi
+    iSin = iTrig(accelY, accelZ);
+    iCos = iTrig(accelZ, accelY);
+
+    // De rotate by roll angle Phi
+    iBfy = (int16_t)    ((magY * iCos - magZ * iSin) >> 15);
+    magZ = (int16_t)    ((magY * iSin + magZ * iCos) >> 15);
+    accelZ = (int16_t)  ((accelY * iSin + accelZ * iCos) >> 15);
+
+    // Calculate pitch angle Theta
+    iThe = iHundredAtan2Deg((int16_t) -accelX, accelZ);
+
+    // restrict pitch angle
+    if(iThe > 9000)
+    {
+        iThe = (int16_t) (18000 - iThe);
+    } 
+    if(iThe < -9000)
+    {
+        iThe = (int16_t) (-18000 - iThe);
+    }
+
+    // Calculate sin and cosine of Theta
+    iSin = (int16_t) -iTrig(accelX, accelZ);
+    iCos = iTrig(accelZ, accelX);
+
+    // Correct cos if pitch in range
+    if (iCos < 0)
+    {
+        iCos = (int16_t) - iCos;
+    }
+
+    // de rotate by Theta
+    iBfx = (int16_t) ((magX * iCos + magZ * iSin) >> 15);
+    iBfz = (int16_t) ((-magX * iSin + magZ * iCos) >> 15);
+
+    // Calculate current yaw = e-compass angle Psi
+    iPsi = iHundredAtan2Deg((int16_t)- iBfy, iBfx);
+    
+    return (int16_t) iPsi;
+            
 }

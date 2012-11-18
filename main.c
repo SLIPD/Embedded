@@ -42,15 +42,6 @@ Accel_Vector_Type accelReading;
 
 char t_str [192*2];
 
-// Roll, pitch and yaw angles computed by 1ecompass
-int16_t iPhi, iThe, iPsi;
-// Magnetic field readings corrected for hard iron effects and PCB orientation
-int16_t iBfx, iBfy, iBfz;
-// Hard iron estimate
-int16_t iVx, iVy, iVz;
-
-int16_t iSin, iCos;
-
 /* prototypes */
 void InitClocks();
 void HandleInterrupt();
@@ -263,12 +254,6 @@ int main()
         
         INT_Enable();
         
-        // Hard iron off setting here if done
-//        accelReading.x -= iVx;
-//        accelReading.y -= iVy;
-//        accelReading.z -= iVz;
-        
-
 	while(1)
         {
             // If there is new ZYX data available, read
@@ -289,56 +274,10 @@ int main()
                 accelReading.y = buf[2]<<8 | buf[3];
                 accelReading.z = buf[4]<<8 | buf[5];
             }
-            
-            // Calculate roll angle Phi
-            iPhi = iHundredAtan2Deg(accelReading.y, accelReading.z);
-            sprintf(t_str, "iPhi 0x%4.4x %d\n", iPhi, iPhi);
-            //TRACE(t_str);
-            
-            // Calculate sin and cosine of roll angle Phi
-            iSin = iTrig(accelReading.y, accelReading.z);
-            iCos = iTrig(accelReading.z, accelReading.y);
-            
-            // De rotate by roll angle Phi
-            iBfy = (int16_t) ((magReading.y * iCos - magReading.z * iSin) >> 15);
-            magReading.z = (int16_t) ((magReading.y * iSin + magReading.z * iCos) >> 15);
-            accelReading.z = (int16_t) ((accelReading.y * iSin + accelReading.z * iCos) >> 15);
-            
-            // Calculate pitch angle Theta
-            iThe = iHundredAtan2Deg((int16_t) -accelReading.x, accelReading.z);
-            
-            // restrict pitch angle
-            if(iThe > 9000)
-            {
-                iThe = (int16_t) (18000 - iThe);
-               // TRACE("more than 9000\n");
-            } 
-            else if (iThe < -9000)
-            {
-                iThe = (int16_t) (-18000 - iThe);
-                //TRACE("less than -9000\n");
-            }
-            sprintf(t_str, "iThe 0x%4.4x %d\n", iThe, iThe);
-            //TRACE(t_str);
-            
-            // Calculate sin and cosine of Theta
-            iSin = (int16_t) -iTrig(accelReading.x, accelReading.z);
-            iCos = iTrig(accelReading.z, accelReading.x);
-            
-            // Correct cos if pitch in range
-            if (iCos < 0)
-            {
-                iCos = (int16_t) - iCos;
-            }
-            
-            // de rotate by Theta
-            iBfx = (int16_t) ((magReading.x * iCos + magReading.z * iSin) >> 15);
-            iBfz = (int16_t) ((-magReading.x * iSin + magReading.z * iCos) >> 15);
-            
-            // Calculate current yaw = e-compass angle Psi
-            iPsi = iHundredAtan2Deg((int16_t)- iBfy, iBfx);
-            
-            sprintf(t_str, "iPsi 0x%4.4x %d Degrees\n", iPsi, iPsi/100);
+           
+            int16_t heading = ieCompass(magReading.x, magReading.y, magReading.z, accelReading.x, accelReading.y, accelReading.z);
+
+            sprintf(t_str,"heading 0x%4.4x %d Degrees\n", heading, heading/100);
             TRACE(t_str);
             
             wait(1000);
