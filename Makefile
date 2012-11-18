@@ -94,7 +94,8 @@ display.c\
 main.c \
 radio.c \
 led.c \
-trace.c 
+trace.c \
+eCompass.c
 
 S_SRC +=  \
 CMSIS/CM3/DeviceSupport/EnergyMicro/EFM32/startup/cs3/startup_efm32.s

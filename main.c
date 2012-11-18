@@ -49,6 +49,8 @@ int16_t iBfx, iBfy, iBfz;
 // Hard iron estimate
 int16_t iVx, iVy, iVz;
 
+int16_t iSin, iCos;
+
 /* prototypes */
 void InitClocks();
 void HandleInterrupt();
@@ -214,8 +216,6 @@ void InitClocks()
 
 int main()
 {
-	
-    uint8_t verbose = 1;
 	// Chip errata
 	CHIP_Init();
 	
@@ -286,51 +286,58 @@ int main()
         
         INT_Enable();
         
-        int count = 0;
-        int32_t xC, yC, zC;
-        
-        TRACE("Collecting values!\n");
-        while( count < 100)
-        {
-            if(MMARegRead(DR_STATUS_REG) & ZYXDR_MASK)
-            {
-               MMARegReadN(OUT_X_MSB_REG, 6, buf);
-               accelReading.x = buf[0]<<8 | buf[1];
-               accelReading.y = buf[2]<<8 | buf[3];
-               accelReading.z = buf[4]<<8 | buf[5];
-               xC += accelReading.x;
-               yC += accelReading.y;
-               zC += accelReading.z;                       
-               sprintf(t_str, "Count x %d, y %d, z %d\n",  xC, yC, zC);
-               TRACE(t_str);
-               count++;
-           }
-        }
-        
-        calc_xy_angles((float)xC / 200, (float)yC / 200, (float)zC / 200);
-        
-        sprintf(t_str, "x %d, y %d\n", angleX, angleY);
-        TRACE(t_str);
-        
+
 	while(1)
         {
+            
+            if(MAGRegRead(DR_STATUS_REG) & ZYXDR_MASK)
+            {
+                TRACE("Reading MAG!\n");
+                MAGRegReadN(OUT_X_MSB_REG, 6, buf);
+                magReading.x = buf[0]<<8 | buf[1];
+                magReading.y = buf[2]<<8 | buf[3];
+                magReading.z = buf[4]<<8 | buf[5];
+            }
             // If there is new ZYX data available
             if(MMARegRead(DR_STATUS_REG) & ZYXDR_MASK)
             {
-               MMARegReadN(OUT_X_MSB_REG, 6, buf);
-               accelReading.x = buf[0]<<8 | buf[1];
-               accelReading.y = buf[2]<<8 | buf[3];
-               accelReading.z = buf[4]<<8 | buf[5];
-               
-               calc_xy_angles(accelReading.x, accelReading.y, accelReading.z);
-               
-                wait(500);
+                TRACE("Reading MMA!\n");
+                MMARegReadN(OUT_X_MSB_REG, 6, buf);
+                accelReading.x = buf[0]<<8 | buf[1];
+                accelReading.y = buf[2]<<8 | buf[3];
+                accelReading.z = buf[4]<<8 | buf[5];
             }
-            else
+            
+            iPhi = 100 * atan2(accelReading.y, accelReading.z) * (180 / PI);
+            
+            sprintf(t_str, "iPhi 0x%4.4x %d\n", iPhi, iPhi);
+            TRACE(t_str);
+            
+            iSin = accelReading.y / sqrt((accelReading.y * accelReading.y) + (accelReading.z * accelReading.z));
+            iCos = accelReading.z / sqrt((accelReading.y * accelReading.y) + (accelReading.z * accelReading.z));
+            
+            iBfx = (int16_t) ((accelReading.y * iCos - accelReading.z * iSin) >> 15);
+            accelReading.z = (int16_t) ((accelReading.y * iSin + accelReading.z * iCos) >> 15);
+            magReading.z = (int16_t) ((magReading.y * iSin + magReading.z * iCos) >> 15);
+            
+            iThe = 100 * atan2(-magReading.x, magReading.z) * (180 / PI);
+            if(iThe > 9000)
             {
-               //TRACE("NO MAG UPDATE AVAILABLE\n");
-        
+                iThe = (int16_t) (18000 - iThe);
+                TRACE("more than 9000\n");
+            } 
+            else if (iThe < -9000)
+            {
+                iThe = (int16_t) (-18000 - iThe);
+                TRACE("less than -9000\n");
             }
+            
+            iSin = - (magReading.x / sqrt ((magReading.x * magReading.x) + (magReading.z * magReading.z)));
+            iCos = magReading.z / sqrt ((magReading.x * magReading.x) + (magReading.z * magReading.z));
+            
+            sprintf(t_str, "iThe 0x%4.4x %d\n", iThe, iThe);
+            TRACE(t_str);
+            
             wait(1000);
-        }
+       }
 }

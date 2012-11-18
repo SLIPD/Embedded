@@ -157,7 +157,7 @@ extern "C" {
     
 //#define ADC_RATE_1280         0x00
     
-    
+//prototypes   
     int MAG_RegisterGet(I2C_TypeDef *i2c, uint8_t addr, uint8_t reg, uint8_t *buf, uint8_t len);
     
     void MAGRegWrite(uint8_t reg, uint8_t val);
