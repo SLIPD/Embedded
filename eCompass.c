@@ -1,4 +1,6 @@
 #include "eCompass.h"
+#include "MAG3110.h"
+#include "trace.h"
 // Source: AN4248
 
 
@@ -9,10 +11,89 @@ int16_t iBfx, iBfy, iBfz;
 // Hard iron estimate
 int16_t iVx, iVy, iVz;
 
+char t_str [192*2];
 
 const int16_t K1 = 5701;
 const int16_t K2 = -1645;
 const int16_t K3  = 446;
+
+void eCompassInit()
+{
+    uint8_t buf[192*2];
+    Mag_Vector_Type magReading;
+    
+    uint16_t i = 0;
+    uint16_t preValues = 500;
+    int16_t x[500];
+    int16_t y[500];
+    int16_t z[500];
+    
+    // Get values whilst rotating the speck
+    while (i < preValues)
+    {
+        if(MAGRegRead(DR_STATUS_REG) & ZYXDR_MASK)
+        {
+            TRACE("getting values!\n");
+            MAGRegReadN(OUT_X_MSB_REG, 6, buf);
+            magReading.x = buf[0]<<8 | buf[1];
+            magReading.y = buf[2]<<8 | buf[3];
+            magReading.z = buf[4]<<8 | buf[5];
+            
+            x[i] = magReading.x;
+            y[i] = magReading.y;
+            z[i] = magReading.z;
+            i++;
+        }  
+    }
+    
+    int16_t xMin = x[0];
+    int16_t xMax = x[0];
+    int16_t yMin = y[0];
+    int16_t yMax = y[0];
+    int16_t zMin = z[0];
+    int16_t zMax = z[0];
+    
+    for(i = 1; i < preValues; i++)
+    {
+        // x
+        if (x[i] < xMin)
+        {
+            xMin = x[i];
+        }
+        else if (x[i] > xMax)
+        {
+            xMax = x[i];
+        }
+        
+        // y
+        if (y[i] < yMin)
+        {
+            yMin = y[i];
+        }
+        else if (y[i] > yMax)
+        {
+            yMax = y[i];
+        }
+        
+        // z
+        if (z[i] < zMin)
+        {
+            zMin = z[i];
+        }
+        else if (z[i] > zMax)
+        {
+            zMax = z[i];
+        }
+
+    }
+    
+    iVx = (int16_t) (xMax + xMin) / 2;
+    iVy = (int16_t) (yMax + yMin) / 2;
+    iVz = (int16_t) (zMax + zMin) / 2;
+    
+    sprintf(t_str, "iVx = 0x%4.4x, %d, iVy = 0x%4.4x, %d, iVz = 0x%4.4x, %d\n ", iVx, iVx, iVy, iVy, iVz, iVz);
+    TRACE(t_str);
+}
 
 /* iTrig
  * ix, iy: int16_t representing sensor reading in range of -32768 to 32767
@@ -233,9 +314,9 @@ int16_t ieCompass(int16_t magX, int16_t magY, int16_t magZ, int16_t accelX, int1
     int16_t iSin, iCos;
         
     // Hard iron off setting here if done
-//    accelX -= iVx;
-//    accelY -= iVy;
-//    accelZ -= iVz;
+    magX -= iVx;
+    magY -= iVy;
+    //magZ -= iVz;
     
     iPhi = iHundredAtan2Deg(accelY, accelZ);
 

@@ -37,8 +37,8 @@ Main file for SLIP D embedded software
 /* variables */
 DISPLAY_Message displayMessage;
 uint8_t buf[192*2];
-Mag_Vector_Type magReading;
-Accel_Vector_Type accelReading;
+Mag_Vector_Type         magReading;
+Accel_Vector_Type       accelReading;
 
 char t_str [192*2];
 
@@ -254,6 +254,9 @@ int main()
         
         INT_Enable();
         
+        TRACE("eCompassInit() called\n!");
+        eCompassInit();
+        
 	while(1)
         {
             // If there is new ZYX data available, read
@@ -277,9 +280,9 @@ int main()
            
             int16_t heading = ieCompass(magReading.x, magReading.y, magReading.z, accelReading.x, accelReading.y, accelReading.z);
 
-            sprintf(t_str,"heading 0x%4.4x %d Degrees\n", heading, heading);
+            sprintf(t_str,"heading 0x%4.4x %d degrees\n", heading, heading/100);
             TRACE(t_str);
             
-            wait(1000);
+            wait(2000);
        }
 }

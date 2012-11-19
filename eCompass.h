@@ -23,6 +23,7 @@ extern "C" {
     
 // prototypes
     
+    void eCompassInit();
     int16_t iTrig(int16_t ix, int16_t iy);
     int16_t iHundredAtan2Deg(int16_t iy, int16_t ix);
     int16_t iHundredAtanDeg(int16_t iy, int16_t ix);
