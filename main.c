@@ -31,7 +31,7 @@ Main file for SLIP D embedded software
 /* Custom libraries */
 #include "MAG3110.h"
 #include "MMA845XQ.h"
-#include "eCompass.h"
+#include "compass.h"
 
 
 /* variables */
@@ -228,9 +228,6 @@ int main()
         magReading.x = buf[0]<<8 | buf[1];
         magReading.y = buf[2]<<8 | buf[3];
         magReading.z = buf[4]<<8 | buf[5];
-        uint8_t id = MAGRegRead(WHO_AM_I);
-        sprintf(t_str, "MAG3110 WHO AM I: 0x%2x\n", id);
-        TRACE(t_str);
         
         // init MMA
         MMAInit(); // Set up accelerometer
@@ -238,9 +235,6 @@ int main()
         accelReading.x = buf[0]<<8 | buf[1];
         accelReading.y = buf[2]<<8 | buf[3];
         accelReading.z = buf[4]<<8 | buf[5];
-        id = MMARegRead(WHO_AM_I_REG);
-        sprintf(t_str, "MMA WHO AM I: 0x%2x\n", id);
-        TRACE(t_str);
         
 	NVIC_EnableIRQ(GPIO_EVEN_IRQn);
 	NVIC_EnableIRQ(GPIO_ODD_IRQn);
@@ -254,35 +248,32 @@ int main()
         
         INT_Enable();
         
-        TRACE("eCompassInit() called\n!");
-        eCompassInit();
-        
+        TRACE("compassInit()\n");
+        compassInit();
+        TRACE("compassInit() done\n");
+        findTransformation();
+        findAverageVectorLength();
 	while(1)
         {
-            // If there is new ZYX data available, read
+           
             if(MAGRegRead(DR_STATUS_REG) & ZYXDR_MASK)
             {
-                //TRACE("Reading MAG!\n");
                 MAGRegReadN(OUT_X_MSB_REG, 6, buf);
                 magReading.x = buf[0]<<8 | buf[1];
                 magReading.y = buf[2]<<8 | buf[3];
                 magReading.z = buf[4]<<8 | buf[5];
-            }
-            
-            if(MMARegRead(DR_STATUS_REG) & ZYXDR_MASK)
-            {
-              //  TRACE("Reading MMA!\n");
-                MMARegReadN(OUT_X_MSB_REG, 6, buf);
-                accelReading.x = buf[0]<<8 | buf[1];
-                accelReading.y = buf[2]<<8 | buf[3];
-                accelReading.z = buf[4]<<8 | buf[5];
-            }
-           
-            int16_t heading = ieCompass(magReading.x, magReading.y, magReading.z, accelReading.x, accelReading.y, accelReading.z);
+                
+                vector_t vec;
+                vec.x = (float) magReading.x;
+                vec.y = (float) magReading.y;
+                vec.z = (float) magReading.z;
 
-            sprintf(t_str,"heading 0x%4.4x %d degrees\n", heading, heading/100);
-            TRACE(t_str);
+                vec = transform(vec);
+                sprintf(t_str, "vec = x %f , y %f, z %f\n", vec.x, vec.y, vec.z);
+                TRACE(t_str);
+            }
             
-            wait(2000);
-       }
+         
+            wait(1000);
+        }
 }

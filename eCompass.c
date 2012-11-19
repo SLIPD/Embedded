@@ -24,9 +24,9 @@ void eCompassInit()
     
     uint16_t i = 0;
     uint16_t preValues = 500;
-    int16_t x[500];
-    int16_t y[500];
-    int16_t z[500];
+    int16_t x[preValues];
+    int16_t y[preValues];
+    int16_t z[preValues];
     
     // Get values whilst rotating the speck
     while (i < preValues)
