@@ -4,9 +4,11 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#include "uart.h"
+
 static inline void TRACE(char *msg)
 {
-	USB_Transmit((uint8_t*)msg, strlen(msg));
+	UART1_Send((uint8_t*)msg, strlen(msg));
 }
 
 #endif

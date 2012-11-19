@@ -26,8 +26,8 @@ WINDOWSCS = C:/CodeSourcery/Sourcery_CodeBench_Lite_for_ARM_EABI
 LINUXCS   = /cad/codesourcery/arm-none-eabi/arm-2010q1
 GCCVERSION = $(shell $(CC) -dumpversion)
 
-#TOOLDIR = C:/CodeSourcery/Sourcery_CodeBench_Lite_for_ARM_EABI
-TOOLDIR = ~/Developer/Cross/arm-cs-tools-2011.09-69-0084249-20121012
+TOOLDIR = C:/CodeSourcery/Sourcery_CodeBench_Lite_for_ARM_EABI
+#TOOLDIR = ~/Developer/Cross/arm-cs-tools-2011.09-69-0084249-20121012
 RM = rm -rf
 
 CC      = $(QUOTE)$(TOOLDIR)/bin/arm-none-eabi-gcc$(QUOTE)
@@ -95,6 +95,8 @@ efm32lib/src/efm32_rtc.c \
 system/usart.c \
 system/queue.c \
 system/timer.c \
+system/uart.c \
+tasks/radio_init_task.c \
 main.c \
 led.c \
 scheduler.c 

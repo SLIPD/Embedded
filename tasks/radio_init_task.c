@@ -13,8 +13,6 @@
 #include "nRF24L01.h"
 #include "led.h"
 
-#include "node_radio_task.h"
-
 /* variables */
 uint8_t txBufferMem[RADIO_BUFFER_SIZE * 32],
 	rxBufferMem[RADIO_BUFFER_SIZE * 32];
@@ -99,6 +97,9 @@ void radio_interrupt_rt()
 void radio_init_task_entrypoint()
 {
 	
+	while(1)
+		TRACE("HELLO WORLD\n");
+	
 	QUEUE_Init(&txBuffer, txBufferMem, 32, RADIO_BUFFER_SIZE);
 	QUEUE_Init(&rxBuffer, rxBufferMem, 32, RADIO_BUFFER_SIZE);
 	
@@ -142,16 +143,7 @@ void radio_init_task_entrypoint()
 	RADIO_SetMode(OFF);
 	RADIO_Enable(OFF);
 	
-	#ifdef BASESTATION
-		
-		SCHEDULER_TaskInit(&basestation_radio_task, basestation_radio_task_entrypoint);
-		SCHEDULER_TaskInit(&usb_relay_task, usb_relay_task_entrypoint);
-		
-	#else
-	
-		SCHEDULER_TaskInit(&node_radio_task, node_radio_task_entrypoint);
-	
-	#endif
+	while(1);
 	
 }
 

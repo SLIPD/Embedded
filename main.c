@@ -7,7 +7,6 @@
 #include "efm32_cmu.h"
 #include "efm32_timer.h"
 #include "efm32_int.h"
-#include "efm32_usb.h"
 
 #include <stdint.h>
 #include <stdbool.h>
@@ -39,9 +38,6 @@ int main()
 	// init LEDs
 	LED_Init();
 	
-	// init usb
-	USB_Init();
-	
 	// init scheduler
 	SCHEDULER_Init();
 	
@@ -64,13 +60,16 @@ void enableInterrupts()
 	NVIC_SetPriority(PendSV_IRQn, 7);
 	NVIC_SetPriority(SysTick_IRQn, 7);
 	
-	NVIC_EnableIRQ(USART0_TX_IRQn);
-	NVIC_EnableIRQ(USART0_RX_IRQn);
+	NVIC_EnableIRQ(USART2_TX_IRQn);
+	NVIC_EnableIRQ(USART2_RX_IRQn);
 	
 	NVIC_EnableIRQ(GPIO_EVEN_IRQn);
 	
 	NVIC_EnableIRQ(TIMER0_IRQn);
 	NVIC_EnableIRQ(TIMER1_IRQn);
+	
+	NVIC_EnableIRQ(UART1_TX_IRQn);
+	NVIC_EnableIRQ(UART1_RX_IRQn);
 	
 }
 
@@ -109,7 +108,10 @@ void initClocks()
 	RTC_Enable(true);
 
 	// enable radio usart
-	CMU_ClockEnable(cmuClock_USART0, true);
+	CMU_ClockEnable(cmuClock_USART2, true);
+	
+	// enable pc serial
+	CMU_ClockEnable(cmuClock_UART1, true);
 	
 	// enable timers
 	CMU_ClockEnable(cmuClock_TIMER0, true);

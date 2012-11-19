@@ -4,9 +4,9 @@
 #include <string.h>
 
 #include "usart.h"
-#include "usb.h"
 #include "trace.h"
 #include "queue.h"
 #include "timer.h"
+#include "uart.h"
 
 #endif
