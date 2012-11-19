@@ -24,6 +24,7 @@ typedef struct {
     void findTransformation();
     void findAverageVectorLength();
     vector_t transform(vector_t vec);
+    float resultantAngle(vector_t vecA, vector_t vecB);
 
 
 #ifdef	__cplusplus

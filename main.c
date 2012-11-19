@@ -206,10 +206,6 @@ int main()
         NVIC_ClearPendingIRQ(TIMER0_IRQn);
         NVIC_EnableIRQ(TIMER0_IRQn);
         
-        // init display AND I2C
-//        DISPLAY_Init();
-//        DISPLAY_InitMessage(&displayMessage);
-        
 	// init reset pin
 	GPIO_PinModeSet(gpioPortD,10,gpioModePushPull,1);
 	GPIO_PinModeSet(gpioPortD, 15, gpioModeWiredAnd, 1);
@@ -240,8 +236,6 @@ int main()
 	NVIC_EnableIRQ(GPIO_ODD_IRQn);
 	
 	// set up LEDs
-	uint8_t color = 0;
-	uint8_t packet[RADIO_PACKET_SIZE];
 	LED_Off(RED);
 	LED_Off(BLUE);
 	LED_Off(GREEN);
@@ -251,11 +245,12 @@ int main()
         TRACE("compassInit()\n");
         compassInit();
         TRACE("compassInit() done\n");
+        
         findTransformation();
         findAverageVectorLength();
+        
 	while(1)
         {
-           
             if(MAGRegRead(DR_STATUS_REG) & ZYXDR_MASK)
             {
                 MAGRegReadN(OUT_X_MSB_REG, 6, buf);
@@ -269,11 +264,12 @@ int main()
                 vec.z = (float) magReading.z;
 
                 vec = transform(vec);
-                sprintf(t_str, "vec = x %f , y %f, z %f\n", vec.x, vec.y, vec.z);
+                sprintf(t_str, "vec = x %.3f , y %.3f, z %.3f\n", vec.x*100, vec.y*100, vec.z*100);
+                TRACE(t_str);
+//                float angle = resultantAngle(vec.x)
+                sprintf(t_str, "vec = x %.3f , y %.3f, z %.3f\n", vec.x*100, vec.y*100, vec.z*100);
                 TRACE(t_str);
             }
-            
-         
             wait(1000);
         }
 }

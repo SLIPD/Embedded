@@ -14,6 +14,10 @@ vector_t vectorOffset;
 float avgL;
 char str [500];
     
+/* compassInit()
+ * Fills up the calibration matrix vectorArray
+ * spin the speck when this function is hot
+ */
 void compassInit()
 {
     uint8_t buf[6];
@@ -37,14 +41,17 @@ void compassInit()
     }
 }
 
+/* findTransformation()
+ * Using the calibration matrix, finds the max and min values in each axis (x, y & z)
+ * Finds mid point of sphere, and sets offset vector to these values
+ */
 void findTransformation()
 {
-    // Max and min vectors of cal matrix
+    // Max and min vectors of calibration matrix
     vector_t vMax, vMin;
-
-    // Init max and min vectors
     memset(&vMax, 0, sizeof(vector_t));
     memset(&vMin, 0, sizeof(vector_t));
+    
     int i;
     for(i = 0; i < arrSize; i++)
     {
@@ -87,16 +94,11 @@ void findTransformation()
     vectorOffset.x = (vMax.x + vMin.x) / 2;
     vectorOffset.y = (vMax.y + vMin.y) / 2;
     vectorOffset.z = (vMax.z + vMin.z) / 2;
-    
-//    TRACE("vectorOffset ");
-//    sprintf(str, " x %d", vectorOffset.x);
-//    TRACE(str);
-//    sprintf(str, " y %f", vectorOffset.y);
-//    TRACE(str);
-//    sprintf(str, " z %f\n", vectorOffset.z);
-//    TRACE(str);
 }
 
+/* findAverageVectorLength()
+ * Using the calibration matrix, finds the average vector components
+ */
 void findAverageVectorLength()
 {
     float averageLength = 0;
@@ -109,6 +111,9 @@ void findAverageVectorLength()
     avgL = averageLength;
 }
 
+/* transform(vector_t vec)
+ * resets vec to origin of sphere, and normalise between 0 and 1
+ */
 vector_t transform(vector_t vec)
 {
     // Resets to origin
@@ -122,4 +127,14 @@ vector_t transform(vector_t vec)
     vec.z /= avgL;
     
     return vec;
+}
+
+float resultantAngle(vector_t vecA, vector_t vecB)
+{
+    float A = sqrt((vecA.x * vecA.x) + (vecA.y * vecA.y) + (vecA.z * vecA.z));
+    float B = sqrt((vecB.x * vecB.x) + (vecB.y * vecB.y) + (vecB.z * vecB.z));
+    
+    float ab = (vecA.x * vecB.x) + (vecA.y * vecB.y) + (vecA.z * vecB.z);
+    
+    return acos(ab / (A * B)) * (180 / PI);
 }

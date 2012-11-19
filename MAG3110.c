@@ -133,6 +133,13 @@ void MAGInit(void)
     MAGStandby();
     // MAGRegWrite(0x2E, INT_EN_DRDY_MASK); //Set the interrupt to route to INT1
     // MAGRegWrite(0x2E, INT_EN_DRDY_MASK); //Set the interrupt to route to INT1
+    // Reset any offsetting
+    MAGRegWrite(OFF_X_MSB, 0x00);
+    MAGRegWrite(OFF_X_LSB, 0x00);
+    MAGRegWrite(OFF_Y_MSB, 0x00);
+    MAGRegWrite(OFF_Y_LSB, 0x00);
+    MAGRegWrite(OFF_Z_MSB, 0x00);
+    MAGRegWrite(OFF_Z_LSB, 0x00);
     MAGRegWrite(CTRL_REG2, (MAGRegRead(CTRL_REG2) | AUTO_MRST_MASK )); // Activate automatic magnetic sensor resets
     MAGRegWrite(CTRL_REG2, (MAGRegRead(CTRL_REG2) | RAW_MASK )); // Activate raw mode
     MAGRegWrite(CTRL_REG1, (MAGRegRead(CTRL_REG1) & ~ODR_MASK)); // Active ODR, 80Hz
