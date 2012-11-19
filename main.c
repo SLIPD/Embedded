@@ -1,167 +1,25 @@
-/*
 
-Main file for SLIP D embedded software
-
-*/
-
-/* includes */
 #include "efm32.h"
 
 #include "efm32_chip.h"
-#include "efm32_emu.h"
-#include "efm32_gpio.h"
-#include "efm32_i2c.h"
-#include "efm32_usart.h"
 #include "efm32_rtc.h"
+#include "efm32_gpio.h"
 #include "efm32_cmu.h"
-#include "efm32_adc.h"
 #include "efm32_timer.h"
+#include "efm32_int.h"
+#include "efm32_usb.h"
 
 #include <stdint.h>
+#include <stdbool.h>
 
-#include "radio.h"
+#include "scheduler.h"
+#include "tasks.h"
+#include "system.h"
 #include "led.h"
-#include "trace.h"
-#include "gps.h"
-#include "node_config.h"
-#include "flash.h"
 
-/* variables */
-
-
-/* prototypes */
-void InitClocks();
-void HandleInterrupt();
-void startupLEDs();
-void updateLEDs(uint8_t color);
-void wait(uint32_t ms);
-
-/* functions */
-void wait(uint32_t ms)
-{
-	
-	uint32_t time, 
-		clockFreq = CMU_ClockFreqGet(cmuClock_RTC);
-	
-	while (ms > 0)
-	{
-		
-		time = RTC_CounterGet();
-		
-		if (16777215 - time < ((double)ms / 1000.0) * clockFreq)
-		{
-			ms -= (uint32_t)(1000.0 * ((16777215 - time) / (double)clockFreq));
-			while (RTC_CounterGet() > time);
-		}
-		else
-		{
-			while (RTC_CounterGet() < time + ((double)ms / 1000.0) * clockFreq);
-			break;
-		}
-		
-	}
-	
-}
-
-// messy interrupt handler
-void GPIO_EVEN_IRQHandler(void) 
-{
-	HandleInterrupt();
-}
-void GPIO_ODD_IRQHandler(void)
-{
-	HandleInterrupt();
-}
-
-void HandleInterrupt()
-{
-	//TRACE("INTERRUPT RECEIVED\n");
-	RADIO_Interrupt();
-}
-
-void updateLEDs(uint8_t color)
-{
-	
-	switch (color)
-	{
-	case 0:
-		LED_On(RED);
-		LED_Off(GREEN);
-		break;
-	case 1:
-		LED_On(BLUE);
-		LED_Off(RED);
-		break;
-	case 2:
-		LED_On(GREEN);
-		LED_Off(BLUE);
-		break;
-	}
-	
-}
-
-void startupLEDs()
-{
-	
-	LED_Off(RED);
-	LED_Off(BLUE);
-	LED_Off(GREEN);
-	
-	wait(1000);
-	
-	LED_On(RED);
-	LED_On(BLUE);
-	LED_On(GREEN);
-	
-	wait(1000);
-	
-	LED_Off(RED);
-	LED_Off(BLUE);
-	LED_Off(GREEN);
-	
-	wait(1000);
-	
-}
-
-void InitClocks()
-{
-	/* Starting LFXO and waiting until it is stable */
-  CMU_OscillatorEnable(cmuOsc_LFXO, true, true);
-  
-  // starting HFXO, wait till stable
-  CMU_OscillatorEnable(cmuOsc_HFXO, true, true);
-	
-	// route HFXO to CPU
-	CMU_ClockSelectSet(cmuClock_HF, cmuSelect_HFXO);
-	
-  /* Routing the LFXO clock to the RTC */
-  CMU_ClockSelectSet(cmuClock_LFA, cmuSelect_LFXO);
-  CMU_ClockSelectSet(cmuClock_LFB, cmuSelect_LFXO);
-  
-  // disabling the RCs
-	CMU_ClockEnable(cmuSelect_HFRCO, false);
-	CMU_ClockEnable(cmuSelect_LFRCO, false);
-
-  /* Enabling clock to the interface of the low energy modules */
-  CMU_ClockEnable(cmuClock_CORE, true);
-  CMU_ClockEnable(cmuClock_CORELE, true);
-  
-  // enable clock to hf perfs
-  CMU_ClockEnable(cmuClock_HFPER, true);
-	
-	// enable clock to GPIO
-	CMU_ClockEnable(cmuClock_GPIO, true);
-	
-	// enable clock to RTC
-	CMU_ClockEnable(cmuClock_RTC, true);
-	RTC_Enable(true);
-	
-	// enable clock to USARTs
-	CMU_ClockEnable(cmuClock_LEUART1, true);
-	CMU_ClockEnable(cmuClock_UART1, true);
-	CMU_ClockEnable(cmuClock_USART2, true);
-	
-}
+void initClocks();
+void enableTimers();
+void enableInterrupts();
 
 int main()
 {
@@ -173,60 +31,88 @@ int main()
 	SystemCoreClockUpdate();
 	
 	// start clocks
-	InitClocks();
+	initClocks();
 	
-	// startup trace
-	TRACE_Init();
-	TRACE("Trace started\n");
+	// init timer service
+	TIMER_InitCallbacks();
 	
 	// init LEDs
 	LED_Init();
-	TRACE("LEDs ON\n");
 	
-	// show startup LEDs
-	startupLEDs();
+	// init usb
+	USB_Init();
 	
-	// enable gpio interrupts
-	NVIC_ClearPendingIRQ(GPIO_EVEN_IRQn);
-	NVIC_ClearPendingIRQ(GPIO_ODD_IRQn);
+	// init scheduler
+	SCHEDULER_Init();
 	
-	// init radio
-	RADIO_Init();
-	TRACE("Radio started\n");
+	// enable interrupts
+	enableInterrupts();
+	
+	// init tasks
+	SCHEDULER_TaskInit(&radio_init_task, radio_init_task_entrypoint);
+	
+	// run
+	SCHEDULER_Run();
+	
+}
+
+void enableInterrupts()
+{
+	
+	NVIC_EnableIRQ(SysTick_IRQn);
+	NVIC_EnableIRQ(PendSV_IRQn);
+	NVIC_SetPriority(PendSV_IRQn, 7);
+	NVIC_SetPriority(SysTick_IRQn, 7);
+	
+	NVIC_EnableIRQ(USART0_TX_IRQn);
+	NVIC_EnableIRQ(USART0_RX_IRQn);
 	
 	NVIC_EnableIRQ(GPIO_EVEN_IRQn);
-	NVIC_EnableIRQ(GPIO_ODD_IRQn);
 	
-	// set up LEDs
-	uint8_t packet[RADIO_PACKET_SIZE];
-	LED_Off(RED);
-	LED_Off(BLUE);
-	LED_Off(GREEN);
+	NVIC_EnableIRQ(TIMER0_IRQn);
+	NVIC_EnableIRQ(TIMER1_IRQn);
 	
-	#ifdef GPS
-		GPS_Init();
-		TRACE("GPS started\n");
-		FLASH_Init();
-		TRACE("Flash started\n");
+}
+
+void initClocks()
+{
 	
-		packet[0] = NODE_ID;
-		while (1)
-		{
-			
-			// read data from GPS
-			GPS_Read(packet);
-			
-			// transmit
-			RADIO_Transmit(packet);
-			
-		}
-	#elif defined BS
-		while(1)
-		{
-			
-			RADIO_Main();
-			
-		}
-	#endif
+	/* Starting LFXO and waiting until it is stable */
+	CMU_OscillatorEnable(cmuOsc_LFXO, true, true);
+
+	// starting HFXO, wait till stable
+	CMU_OscillatorEnable(cmuOsc_HFXO, true, true);
+
+	// route HFXO to CPU
+	CMU_ClockSelectSet(cmuClock_HF, cmuSelect_HFXO);
+
+	/* Routing the LFXO clock to the RTC */
+	CMU_ClockSelectSet(cmuClock_LFA, cmuSelect_LFXO);
+	CMU_ClockSelectSet(cmuClock_LFB, cmuSelect_LFXO);
+
+	// disabling the RCs
+	CMU_ClockEnable(cmuSelect_HFRCO, false);
+	CMU_ClockEnable(cmuSelect_LFRCO, false);
+
+	/* Enabling clock to the interface of the low energy modules */
+	CMU_ClockEnable(cmuClock_CORE, true);
+	CMU_ClockEnable(cmuClock_CORELE, true);
+
+	// enable clock to hf perfs
+	CMU_ClockEnable(cmuClock_HFPER, true);
+
+	// enable clock to GPIO
+	CMU_ClockEnable(cmuClock_GPIO, true);
+
+	// enable clock to RTC
+	CMU_ClockEnable(cmuClock_RTC, true);
+	RTC_Enable(true);
+
+	// enable radio usart
+	CMU_ClockEnable(cmuClock_USART0, true);
+	
+	// enable timers
+	CMU_ClockEnable(cmuClock_TIMER0, true);
+	CMU_ClockEnable(cmuClock_TIMER1, true);
 	
 }

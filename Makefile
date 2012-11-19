@@ -10,7 +10,7 @@
 ####################################################################
 
 DEVICE = EFM32GG990F1024
-PROJECTNAME = slip
+PROJECTNAME = orient
 
 OBJ_DIR = build
 EXE_DIR = exe
@@ -26,7 +26,8 @@ WINDOWSCS = C:/CodeSourcery/Sourcery_CodeBench_Lite_for_ARM_EABI
 LINUXCS   = /cad/codesourcery/arm-none-eabi/arm-2010q1
 GCCVERSION = $(shell $(CC) -dumpversion)
 
-TOOLDIR = C:/CodeSourcery/Sourcery_CodeBench_Lite_for_ARM_EABI
+#TOOLDIR = C:/CodeSourcery/Sourcery_CodeBench_Lite_for_ARM_EABI
+TOOLDIR = ~/Developer/Cross/arm-cs-tools-2011.09-69-0084249-20121012
 RM = rm -rf
 
 CC      = $(QUOTE)$(TOOLDIR)/bin/arm-none-eabi-gcc$(QUOTE)
@@ -52,7 +53,7 @@ CFLAGS += -std=c99 -D$(DEVICE) -mcpu=cortex-m3 -mthumb -ffunction-sections -fno-
 ASMFLAGS += -Ttext 0x0                        
 
 LDFLAGS += -Xlinker -Map=$(LST_DIR)/$(PROJECTNAME).map -mcpu=cortex-m3 -mthumb \
--TCMSIS/CM3/DeviceSupport/EnergyMicro/EFM32/startup/cs3/efm32g.ld -L"$(TOOLDIR)/arm-none-eabi/lib/thumb2" \
+-TCMSIS/CM3/DeviceSupport/EnergyMicro/EFM32/startup/cs3/efm32gg.ld -L"$(TOOLDIR)/arm-none-eabi/lib/thumb2" \
 -L"$(TOOLDIR)/lib/gcc/arm-none-eabi/$(GCCVERSION)/thumb2" \
 -Wl,--gc-sections -Wl,--no-wchar-size-warning
 
@@ -66,7 +67,10 @@ INCLUDEPATHS += \
 -Iefm32lib/inc \
 -Iefm32usb/inc \
 -Ifatfs/src \
--Idrivers
+-Idrivers \
+-Itasks \
+-Isystem \
+-Iincludes
 
 ####################################################################
 # Files                                                            #
@@ -83,20 +87,20 @@ efm32lib/src/efm32_usart.c \
 efm32lib/src/efm32_i2c.c \
 efm32lib/src/efm32_dma.c \
 efm32lib/src/efm32_timer.c \
+efm32lib/src/efm32_letimer.c \
 efm32lib/src/efm32_int.c \
 efm32lib/src/efm32_emu.c \
 efm32lib/src/efm32_adc.c \
 efm32lib/src/efm32_rtc.c \
-efm32lib/src/efm32_leuart.c \
+system/usart.c \
+system/queue.c \
+system/timer.c \
 main.c \
-radio.c \
 led.c \
-trace.c \
-gps.c \
-flash.c
+scheduler.c 
 
 S_SRC +=  \
-CMSIS/CM3/DeviceSupport/EnergyMicro/EFM32/startup/cs3/startup_efm32.s
+CMSIS/CM3/DeviceSupport/EnergyMicro/EFM32/startup/cs3/startup_efm32gg.s
 
 ####################################################################
 # Rules                                                            #
