@@ -100,6 +100,7 @@ tasks/radio_init_task.c \
 tasks/basestation_radio_task.c \
 tasks/node_radio_task.c \
 tasks/tdma_setup_task.c \
+tasks/display_init_task.c \
 main.c \
 led.c \
 scheduler.c 

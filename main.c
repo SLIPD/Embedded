@@ -49,6 +49,7 @@ int main()
 	
 	// init tasks
 	SCHEDULER_TaskInit(&radio_init_task, radio_init_task_entrypoint);
+	SCHEDULER_TaskInit(&display_init_task, display_init_task_entrypoint);
 	
 	// run
 	SCHEDULER_Run();
@@ -121,5 +122,8 @@ void initClocks()
 	// enable timers
 	CMU_ClockEnable(cmuClock_TIMER0, true);
 	CMU_ClockEnable(cmuClock_TIMER1, true);
+	
+	// i2c
+	CMU_ClockEnable(cmuClock_I2C0, true);
 	
 }

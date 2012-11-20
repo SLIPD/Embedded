@@ -8,5 +8,6 @@
 #include "queue.h"
 #include "timer.h"
 #include "uart.h"
+#include "i2c.h"
 
 #endif

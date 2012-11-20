@@ -66,29 +66,46 @@ void node_radio_task_entrypoint()
 
 	TIMER_Init(TIMER0, &timerInit);
 	
+	//display_write("Waiting...\n");
+	
 	while(1);
 	{
 		
 		if (RADIO_Recv((uint8_t*)&packet))
 		{
 			
-			if (packet.payload.identification.id0 == *((uint32_t*)(0xFE081F0)) &&
-				packet.payload.identification.id1 == *((uint32_t*)(0xFE081F4)))
+			TRACE("PACKET RECV'd\n");
+			
+			switch (packet.msgType)
 			{
+				case 0x00:
+			
+					if (packet.payload.identification.id0 == *((uint32_t*)(0xFE081F0)) &&
+						packet.payload.identification.id1 == *((uint32_t*)(0xFE081F4)))
+					{
+						
+						// disable timer
+						timerInit.enable = false;
+						TIMER_Init(TIMER0, &timerInit);
+						
+						TRACE("IDENT RECEIVED\n");
+						
+						RADIO_SetNodeId(packet.payload.identification.nodeInfo);
+						
+						display_write("ident received\n");
+						
+						while(1);
+						
+					}
+					
+					break;
 				
-				// disable timer
-				TIMER_ClearCallback(&callback);
-				
-				// move to TDMA
-				RADIO_Enable(OFF);
-				LED_On(RED);
-				LED_On(GREEN);
-				LED_On(BLUE);
-				
-				TRACE("IDENT RECEIVED\n");
-				
-				while(1);
-				
+				case 0x03:
+					
+					// show message
+					
+					
+					break;
 			}
 			
 		}
