@@ -35,8 +35,8 @@ DISPLAY_Message displayMessage;
 uint8_t buf[192*2];
 Mag_Vector_Type magReading;
 Accel_Vector_Type accelReading;
-char t_str [32];
-char b_str [32];
+char t_str [32]; // top line
+char b_str [32]; // bottom line
 
 /* prototypes */
 void InitClocks();
@@ -207,15 +207,8 @@ int main()
         DISPLAY_Init();
         DISPLAY_InitMessage(&displayMessage);
         
-	// init reset pin
-	GPIO_PinModeSet(gpioPortD,10,gpioModePushPull,1);
-	GPIO_PinModeSet(gpioPortD, 15, gpioModeWiredAnd, 1);
-	GPIO_PinModeSet(gpioPortD, 14, gpioModeWiredAnd, 1);
-
-        
         // init MAG
         MAGInit(); // Set up magnetometer
-        
         MAGRegReadN(OUT_X_MSB_REG, 6, buf); // Read MSB of X 
         
         // init MMA
@@ -234,15 +227,15 @@ int main()
         
         
         INT_Enable();
-         displayMessage.topLine=true;
-         sprintf(t_str, "top_line");
-         displayMessage.message=(t_str);
-         DISPLAY_SetMessage(&displayMessage); 
+        displayMessage.topLine=true;
+        sprintf(t_str, "top_line");
+        displayMessage.message=(t_str);
+        DISPLAY_SetMessage(&displayMessage); 
 
-         displayMessage.topLine=false;
-         sprintf(b_str, "bottom_line");
-         displayMessage.message=(b_str);
-         DISPLAY_SetMessage(&displayMessage); 
+        displayMessage.topLine=false;
+        sprintf(b_str, "bottom_line");
+        displayMessage.message=(b_str);
+        DISPLAY_SetMessage(&displayMessage); 
                 
 	while(1)
         {    
