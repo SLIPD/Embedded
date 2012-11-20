@@ -8,6 +8,7 @@
 /* variables */
 uint8_t partial_packet[32],
 	position = 0;
+bool started = false;
 
 /* prototypes */
 void basestation_recv_uart(uint8_t byte);
@@ -25,6 +26,14 @@ void basestation_recv_uart(uint8_t byte)
 	}
 }
 
+void basestation_get_starter(uint8_t byte)
+{
+	if (byte == '*')
+	{
+		started = true;
+	}
+}
+
 void basestation_send_packet_rt()
 {
 	RADIO_Send(partial_packet);
@@ -34,6 +43,14 @@ void basestation_radio_task_entrypoint()
 {
 	
 	uint8_t packet[32];
+	
+	UART1_SetRecvHandler(basestation_get_starter);
+	
+	while(!started)
+		SCHEDULER_Yield();
+	
+	char star = '*';
+	UART1_Send((uint8_t*)&star,1);
 	
 	UART1_SetRecvHandler(basestation_recv_uart);
 	

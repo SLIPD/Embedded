@@ -41,5 +41,6 @@ void RADIO_TxBufferFill();
 void RADIO_SetAutoRefil(bool auto_refil);
 uint16_t RADIO_TxBufferSize();
 uint16_t RADIO_RxBufferSize();
+void RADIO_SetNodeId(uint8_t id);
 
 #endif

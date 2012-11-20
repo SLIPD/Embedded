@@ -24,7 +24,6 @@ void tdma_setup_task_entrypoint()
 		if (RADIO_RxBufferSize())
 		{
 			time = RTC_CounterGet();
-			TRACE("RX\n");
 		}
 		
 		if (RADIO_TxBufferSize())

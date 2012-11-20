@@ -19,6 +19,7 @@ uint8_t txBufferMem[RADIO_BUFFER_SIZE * 32],
 queue_t txBuffer, rxBuffer;
 bool auto_refil = false,
 	send_in_progress = false;
+uint8_t node_id = 0xFF;
 
 /* prototypes */
 void radio_cs(USART_ChipSelect set);
@@ -87,8 +88,17 @@ void radio_interrupt_rt()
 			payload[0] = NRF_R_RX_PAYLOAD;
 			USART2_Transfer(payload,33,radio_cs);
 			
-				
-			QUEUE_Write(&rxBuffer, &payload[1]);
+			Packet *p = (Packet*)&payload[1];
+			if (p->destinationId == node_id || p->destinationId == 0xFF)
+			{
+				QUEUE_Write(&rxBuffer, &payload[1]);
+			}
+			else
+			{
+				p->ttl--;
+				if (p->ttl > 0)
+					RADIO_Send(&payload[1]);
+			}
 			
 			i++;
 		}
@@ -300,4 +310,9 @@ bool RADIO_Sending()
 	
 	return send_in_progress;
 	
+}
+
+void RADIO_SetNodeId(uint8_t id)
+{
+	node_id = id;
 }
