@@ -17,7 +17,8 @@
 uint8_t txBufferMem[RADIO_BUFFER_SIZE * 32],
 	rxBufferMem[RADIO_BUFFER_SIZE * 32];
 queue_t txBuffer, rxBuffer;
-bool auto_refil = false;
+bool auto_refil = false,
+	send_in_progress = false;
 
 /* prototypes */
 void radio_cs(USART_ChipSelect set);
@@ -64,6 +65,10 @@ void radio_interrupt_rt()
 			RADIO_TxBufferFill();
 		}
 		
+		// if no packets left, send in progress false
+		if (radio_readRegister(NRF_FIFO_STATUS) & 0x10)
+			send_in_progress = false;
+		
 	}
 	
 	// rx
@@ -92,11 +97,6 @@ void radio_interrupt_rt()
 	
 	radio_writeRegister(NRF_STATUS,0x70);
 	
-}
-
-void rcv(uint8_t b)
-{
-	LED_Toggle(GREEN);
 }
 
 void radio_init_task_entrypoint()
@@ -190,7 +190,7 @@ void RADIO_SetMode(RADIO_Mode rm)
 	{
 		default:
 		case OFF:
-			radio_writeRegister(NRF_CONFIG, 0x0C); //LED_On(RED);LED_Off(GREEN);LED_Off(BLUE);
+			radio_writeRegister(NRF_CONFIG, 0x0C); LED_Off(GREEN);LED_Off(BLUE);
 			break;
 		case TX:
 			radio_writeRegister(NRF_CONFIG, 0x0E); LED_On(GREEN);LED_Off(BLUE);
@@ -272,6 +272,9 @@ void RADIO_TxBufferFill()
 		
 	}
 	
+	if (i > 0)
+		send_in_progress = true;
+	
 	char tmsg[255];
 	sprintf(tmsg, "%i: RADIO_TxBufferFill(): fill tx buffer (total pushed: %i)\n", TIMER_CounterGet(TIMER0), i);
 	TRACE(tmsg);
@@ -289,5 +292,12 @@ uint16_t RADIO_RxBufferSize()
 {
 	
 	return QUEUE_Fill(&rxBuffer);
+	
+}
+
+bool RADIO_Sending()
+{
+	
+	return send_in_progress;
 	
 }

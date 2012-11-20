@@ -5,6 +5,11 @@
 void node_radio_task_entrypoint()
 {
 	
-	while(1);
+	while(1)
+	{
+		
+		
+		
+	}
 	
 }

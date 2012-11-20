@@ -62,7 +62,7 @@ uint16_t QUEUE_Fill(queue_t *queue)
 	while (!((pos + 1) % queue->queue_size == queue->write_position))
 	{
 		i++;
-		pos = (pos = 1) % queue->queue_size;
+		pos = (pos + 1) % queue->queue_size;
 	}
 	
 	return i;

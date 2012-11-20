@@ -11,6 +11,7 @@ uint8_t partial_packet[32],
 
 /* prototypes */
 void basestation_recv_uart(uint8_t byte);
+void basestation_send_packet_rt();
 
 /* functions */
 void basestation_recv_uart(uint8_t byte)
@@ -20,8 +21,13 @@ void basestation_recv_uart(uint8_t byte)
 	if (position == 32)
 	{
 		position = 0;
-		RADIO_Send(partial_packet);
+		SCHEDULER_RunRTTask(basestation_send_packet_rt);
 	}
+}
+
+void basestation_send_packet_rt()
+{
+	RADIO_Send(partial_packet);
 }
 
 void basestation_radio_task_entrypoint()
