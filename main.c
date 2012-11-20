@@ -228,9 +228,9 @@ int main()
         // init MMA
         MMAInit(); // Set up accelerometer
         MMARegReadN(OUT_X_MSB_REG, 6, buf); // Read MSB of X 
-        accelReading.x = buf[0]<<8 | buf[1];
-        accelReading.y = buf[2]<<8 | buf[3];
-        accelReading.z = buf[4]<<8 | buf[5];
+        accelReading.x = ((int16_t) (buf[0]<<8 | buf[1])) >> 0x2;
+        accelReading.y = ((int16_t) (buf[2]<<8 | buf[3])) >> 0x2;
+        accelReading.z = ((int16_t) (buf[4]<<8 | buf[5])) >> 0x2;
         
 	NVIC_EnableIRQ(GPIO_EVEN_IRQn);
 	NVIC_EnableIRQ(GPIO_ODD_IRQn);
