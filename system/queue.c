@@ -52,3 +52,19 @@ bool QUEUE_Write(queue_t *queue, uint8_t *payload)
 	return true;
 	
 }
+
+uint16_t QUEUE_Fill(queue_t *queue)
+{
+	
+	uint16_t i = 0,
+		pos = queue->read_position;
+	
+	while (!((pos + 1) % queue->queue_size == queue->write_position))
+	{
+		i++;
+		pos = (pos = 1) % queue->queue_size;
+	}
+	
+	return i;
+	
+}

@@ -38,6 +38,9 @@ int main()
 	// init LEDs
 	LED_Init();
 	
+	// init trace
+	TRACE_Init();
+	
 	// init scheduler
 	SCHEDULER_Init();
 	

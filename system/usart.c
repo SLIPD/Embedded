@@ -87,6 +87,21 @@ void USART0_RX_IRQHandler()
 	
 }
 
+void USART2_TX_IRQHandler()
+{
+	
+	USART_TX(USART2,2);
+	
+}
+
+void USART2_RX_IRQHandler()
+{
+	
+	USART_RX(USART2,2);
+	
+}
+
+
 void USART_RX(USART_TypeDef *usart, uint8_t usart_idx)
 {
 	

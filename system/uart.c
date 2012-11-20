@@ -21,8 +21,8 @@ typedef struct
 
 } uart_transfer_t;
 
-uart_transfer_t *tx_transfer = NULL,
-	*rx_transfer = NULL;
+uart_transfer_t *tx_transfer = NULL;
+void (*uart_rx_handler)(uint8_t) = NULL;
 
 /* prototyes */
 
@@ -42,6 +42,9 @@ void UART1_Init(uint8_t location)
 		break;
 	case 2:
 		uart_location = UART_ROUTE_LOCATION_LOC2;
+		break;
+	case 3:
+		uart_location = UART_ROUTE_LOCATION_LOC3;
 		break;
 	}
 	
@@ -90,22 +93,13 @@ void UART1_RX_IRQHandler()
 	if (!(UART1->STATUS & UART_STATUS_RXDATAV))
 		return;
 	
-	if (rx_transfer == NULL)
+	if (uart_rx_handler == NULL)
 	{
 		USART_IntDisable(UART1, UART_IF_RXDATAV);
 		return;
 	}
 	
-	rx_transfer->data[rx_transfer->position] = UART1->RXDATA;
-	rx_transfer->position++;
-	
-	if (rx_transfer->position == rx_transfer->size)
-	{
-		*(rx_transfer->complete) = true;
-		rx_transfer = NULL;
-		USART_IntDisable(UART1, UART_IF_RXDATAV);
-		return;
-	}
+	uart_rx_handler(UART1->RXDATA);
 	
 }
 
@@ -144,37 +138,17 @@ void UART1_Send(uint8_t *data, uint16_t size)
 	
 }
 
-void UART1_Recv(uint8_t *data, uint16_t size)
+void UART1_SetRecvHandler(void (*uart_handler)(uint8_t))
 {
 	
-	bool complete = false;
-	
-	uart_transfer_t transfer;
-	transfer.data = data;
-	transfer.position = 0;
-	transfer.size = size;
-	transfer.complete = &complete;
-	
-	do
-	{
-		
-		INT_Disable();
-		if (rx_transfer == NULL)
-		{
-			rx_transfer = &transfer;
-			INT_Enable();
-			break;
-		}
-		INT_Enable();
-		SCHEDULER_Wait(UART1_RECV_FLAG);
-		
-	}
-	while(1);
-	
+	uart_rx_handler = uart_handler;
 	USART_IntEnable(UART1, USART_IF_RXDATAV);
 	
-	while(!complete);
+}
+
+void UART1_ClearRecvHandler()
+{
 	
-	SCHEDULER_Release(UART1_RECV_FLAG);
+	uart_rx_handler = NULL;
 	
 }

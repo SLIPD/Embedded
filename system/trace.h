@@ -6,6 +6,11 @@
 
 #include "uart.h"
 
+static inline void TRACE_Init()
+{
+	UART1_Init(3);
+}
+
 static inline void TRACE(char *msg)
 {
 	UART1_Send((uint8_t*)msg, strlen(msg));

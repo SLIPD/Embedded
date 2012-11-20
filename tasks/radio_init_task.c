@@ -80,7 +80,7 @@ void radio_interrupt_rt()
 		while (!(radio_readRegister(NRF_FIFO_STATUS) & 0x01))
 		{
 			payload[0] = NRF_R_RX_PAYLOAD;
-			USART0_Transfer(payload,33,radio_cs);
+			USART2_Transfer(payload,33,radio_cs);
 			
 				
 			QUEUE_Write(&rxBuffer, &payload[1]);
@@ -94,11 +94,13 @@ void radio_interrupt_rt()
 	
 }
 
+void rcv(uint8_t b)
+{
+	LED_Toggle(GREEN);
+}
+
 void radio_init_task_entrypoint()
 {
-	
-	while(1)
-		TRACE("HELLO WORLD\n");
 	
 	QUEUE_Init(&txBuffer, txBufferMem, 32, RADIO_BUFFER_SIZE);
 	QUEUE_Init(&rxBuffer, rxBufferMem, 32, RADIO_BUFFER_SIZE);
@@ -108,11 +110,11 @@ void radio_init_task_entrypoint()
 	GPIO_PinModeSet(NRF_RXEN_PORT, NRF_RXEN_PIN, gpioModePushPull, 0);
 	GPIO_PinModeSet(NRF_INT_PORT, NRF_INT_PIN, gpioModeInput, 0);
 	
-	GPIO_PinModeSet(gpioPortC, 11, gpioModePushPull, 1);
-	GPIO_PinModeSet(gpioPortC, 10, gpioModeInput, 0);
-	GPIO_PinModeSet(gpioPortC, 9, gpioModePushPull, 0);
+	GPIO_PinModeSet(gpioPortB, 5, gpioModePushPull, 1);
+	GPIO_PinModeSet(gpioPortB, 4, gpioModeInput, 0);
+	GPIO_PinModeSet(gpioPortB, 3, gpioModePushPull, 0);
 	
-	USART0_Init(2);
+	USART2_Init(1);
 	
 	// configure gpio interrupt
 	radio_writeRegister(NRF_STATUS,0x70);
@@ -131,11 +133,11 @@ void radio_init_task_entrypoint()
 	uint8_t addr[6];
 	memset(addr,0xE7,6);
 	addr[0] = 0x00 | (NRF_W_REGISTER | NRF_TX_ADDR);
-	USART0_Transfer(addr,6,radio_cs);
+	USART2_Transfer(addr,6,radio_cs);
 	
 	memset(addr,0xE7,6);
 	addr[0] = 0x00 | (NRF_W_REGISTER | NRF_RX_ADDR_P0);
-	USART0_Transfer(addr,6,radio_cs);
+	USART2_Transfer(addr,6,radio_cs);
 	
 	radio_writeRegister(NRF_DYNPD, 0x00);
 	radio_writeRegister(NRF_FEATURE, 0x00);
@@ -143,7 +145,17 @@ void radio_init_task_entrypoint()
 	RADIO_SetMode(OFF);
 	RADIO_Enable(OFF);
 	
-	while(1);
+	SCHEDULER_TaskInit(&tdma_setup_task, tdma_setup_task_entrypoint);
+	
+	#ifdef BASESTATION
+		
+		SCHEDULER_TaskInit(&basestation_radio_task, basestation_radio_task_entrypoint);
+		
+	#else
+	
+		SCHEDULER_TaskInit(&node_radio_task, node_radio_task_entrypoint);
+	
+	#endif
 	
 }
 
@@ -165,10 +177,14 @@ void radio_cs(USART_ChipSelect set)
 void RADIO_SetMode(RADIO_Mode rm)
 {
 	
+	char tmsg[255];
+	sprintf(tmsg,"RADIO_SetMode(): set mode to: 0x%2.2X\n", rm);
+	TRACE(tmsg);
+	
 	uint8_t cmd = NRF_FLUSH_RX;
-	USART0_Transfer(&cmd,1,radio_cs);
+	USART2_Transfer(&cmd,1,radio_cs);
 	cmd = NRF_FLUSH_TX;
-	USART0_Transfer(&cmd,1,radio_cs);
+	USART2_Transfer(&cmd,1,radio_cs);
 	
 	switch (rm)
 	{
@@ -210,7 +226,7 @@ uint8_t radio_readRegister(uint8_t reg)
 	uint8_t transfer[2];
 	transfer[0] = (NRF_R_REGISTER | reg);
 	transfer[1] = NRF_NOP;
-	USART0_Transfer(transfer,2,radio_cs);
+	USART2_Transfer(transfer,2,radio_cs);
 	return transfer[1];
 }
 
@@ -219,7 +235,7 @@ void radio_writeRegister(uint8_t reg, uint8_t value)
 	uint8_t transfer[2];
 	transfer[0] = (NRF_W_REGISTER | reg);
 	transfer[1] = value;
-	USART0_Transfer(transfer,2,radio_cs);
+	USART2_Transfer(transfer,2,radio_cs);
 }
 
 bool RADIO_Send(uint8_t payload[32])
@@ -251,7 +267,7 @@ void RADIO_TxBufferFill()
 	{
 		
 		payload[0] = NRF_W_TX_PAYLOAD;
-		USART0_Transfer(payload,33,radio_cs);
+		USART2_Transfer(payload,33,radio_cs);
 		i++;
 		
 	}
@@ -259,5 +275,19 @@ void RADIO_TxBufferFill()
 	char tmsg[255];
 	sprintf(tmsg, "%i: RADIO_TxBufferFill(): fill tx buffer (total pushed: %i)\n", TIMER_CounterGet(TIMER0), i);
 	TRACE(tmsg);
+	
+}
+
+uint16_t RADIO_TxBufferSize()
+{
+	
+	return QUEUE_Fill(&txBuffer);
+	
+}
+
+uint16_t RADIO_RxBufferSize()
+{
+	
+	return QUEUE_Fill(&rxBuffer);
 	
 }

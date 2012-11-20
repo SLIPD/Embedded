@@ -19,5 +19,6 @@ typedef struct
 void QUEUE_Init(queue_t *queue, uint8_t *mem, uint16_t item_size, uint16_t queue_size);
 bool QUEUE_Read(queue_t *queue, uint8_t *payload);
 bool QUEUE_Write(queue_t *queue, uint8_t *payload);
+uint16_t QUEUE_Fill(queue_t *queue);
 
 #endif

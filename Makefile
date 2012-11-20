@@ -97,6 +97,9 @@ system/queue.c \
 system/timer.c \
 system/uart.c \
 tasks/radio_init_task.c \
+tasks/basestation_radio_task.c \
+tasks/node_radio_task.c \
+tasks/tdma_setup_task.c \
 main.c \
 led.c \
 scheduler.c 
