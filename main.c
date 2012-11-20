@@ -235,9 +235,9 @@ int main()
         // init MMA
         MMAInit(); // Set up accelerometer
         MMARegReadN(OUT_X_MSB_REG, 6, buf); // Read MSB of X 
-        accelReading.x = buf[0]<<8 | buf[1];
-        accelReading.y = buf[2]<<8 | buf[3];
-        accelReading.z = buf[4]<<8 | buf[5];
+        accelReading.x = ((int16_t) (buf[0]<<8 | buf[1])) >> 0x2;
+        accelReading.y = ((int16_t) (buf[2]<<8 | buf[3])) >> 0x2;
+        accelReading.z = ((int16_t) (buf[4]<<8 | buf[5])) >> 0x2;
         id = MMARegRead(WHO_AM_I_REG);
         sprintf(t_str, "MMA WHO AM I: 0x%2x\n", id);
         TRACE(t_str);
@@ -262,7 +262,6 @@ int main()
             // If there is new ZYX data available, read
             if(MAGRegRead(DR_STATUS_REG) & ZYXDR_MASK)
             {
-                //TRACE("Reading MAG!\n");
                 MAGRegReadN(OUT_X_MSB_REG, 6, buf);
                 magReading.x = buf[0]<<8 | buf[1];
                 magReading.y = buf[2]<<8 | buf[3];
@@ -271,11 +270,10 @@ int main()
             
             if(MMARegRead(DR_STATUS_REG) & ZYXDR_MASK)
             {
-              //  TRACE("Reading MMA!\n");
                 MMARegReadN(OUT_X_MSB_REG, 6, buf);
-                accelReading.x = buf[0]<<8 | buf[1];
-                accelReading.y = buf[2]<<8 | buf[3];
-                accelReading.z = buf[4]<<8 | buf[5];
+                accelReading.x = ((int16_t) (buf[0]<<8 | buf[1])) >> 0x2;
+                accelReading.y = ((int16_t) (buf[2]<<8 | buf[3])) >> 0x2;
+                accelReading.z = ((int16_t) (buf[4]<<8 | buf[5])) >> 0x2;
             }
            
             int16_t heading = ieCompass(magReading.x, magReading.y, magReading.z, accelReading.x, accelReading.y, accelReading.z);
