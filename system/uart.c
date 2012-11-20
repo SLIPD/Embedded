@@ -48,7 +48,7 @@ void UART1_Init(uint8_t location)
 		break;
 	}
 	
-	UART1->CLKDIV = 256 * ((CMU_ClockFreqGet(cmuClock_HF)) / (9600 * 16) - 1);
+	UART1->CLKDIV = 256 * ((CMU_ClockFreqGet(cmuClock_HF)) / (115200 * 16) - 1);
 
 	UART1->CMD = UART_CMD_TXEN | UART_CMD_RXEN;
 

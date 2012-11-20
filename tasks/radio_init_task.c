@@ -92,9 +92,11 @@ void radio_interrupt_rt()
 			if (p->destinationId == node_id || p->destinationId == 0xFF)
 			{
 				QUEUE_Write(&rxBuffer, &payload[1]);
+				TRACE("PACKET FOR ME!\n");
 			}
 			else
 			{
+				TRACE("PACKET NOT FOR ME\n");
 				p->ttl--;
 				if (p->ttl > 0)
 					RADIO_Send(&payload[1]);
@@ -284,10 +286,6 @@ void RADIO_TxBufferFill()
 	
 	if (i > 0)
 		send_in_progress = true;
-	
-	char tmsg[255];
-	sprintf(tmsg, "%i: RADIO_TxBufferFill(): fill tx buffer (total pushed: %i)\n", TIMER_CounterGet(TIMER0), i);
-	TRACE(tmsg);
 	
 }
 

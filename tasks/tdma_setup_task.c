@@ -29,10 +29,6 @@ void tdma_setup_task_entrypoint()
 		if (RADIO_TxBufferSize())
 		{
 			
-			char tmsg[255];
-			sprintf(tmsg,"size: %i\n", RADIO_TxBufferSize());
-			TRACE(tmsg);
-			
 			if (RTC_CounterGet() - time > TX_WAIT)
 			{
 				

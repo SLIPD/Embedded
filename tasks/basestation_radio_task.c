@@ -42,12 +42,17 @@ void basestation_send_packet_rt()
 void basestation_radio_task_entrypoint()
 {
 	
+	RADIO_SetNodeId(0);
+	
 	uint8_t packet[32];
 	
 	UART1_SetRecvHandler(basestation_get_starter);
 	
 	while(!started)
 		SCHEDULER_Yield();
+	
+	int i;
+	for (i = 0; i < 100000; i++);
 	
 	char star = '*';
 	UART1_Send((uint8_t*)&star,1);
@@ -60,6 +65,7 @@ void basestation_radio_task_entrypoint()
 		if (RADIO_Recv(packet))
 		{
 			
+			LED_Toggle(RED);
 			UART1_Send(packet,32);
 			
 		}

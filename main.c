@@ -73,6 +73,8 @@ void enableInterrupts()
 	
 	NVIC_EnableIRQ(UART1_TX_IRQn);
 	NVIC_EnableIRQ(UART1_RX_IRQn);
+	NVIC_SetPriority(UART1_TX_IRQn, 6);
+	NVIC_SetPriority(UART1_RX_IRQn, 6);
 	
 }
 

@@ -85,7 +85,7 @@ bool TIMER_RegisterCallback(timer_cb_table_t *entry)
 	
 }
 
-void TIMER_ClearCallback(timer_cb_table_t entry)
+void TIMER_ClearCallback(timer_cb_table_t *entry)
 {
 	
 	int i;
@@ -93,7 +93,7 @@ void TIMER_ClearCallback(timer_cb_table_t entry)
 	for (i = 0; i < MAX_TIMER_CALLBACKS; i++)
 	{
 		
-		if (memcmp(&timer_cb_table[i], &entry, sizeof(timer_cb_table_t)) == 0)
+		if (memcmp(&timer_cb_table[i], entry, sizeof(timer_cb_table_t)) == 0)
 		{
 			memset(&timer_cb_table[i], 0, sizeof(timer_cb_table_t));
 		}
