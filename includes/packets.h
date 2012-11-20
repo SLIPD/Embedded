@@ -3,37 +3,62 @@
 
 #include <stdint.h>
 
-typedef enum
+typedef struct 
 {
 	
-	TIMING_PULSE = 0,
-	SESSION_CONFIG = 1,
-	MAGNETOMETER_CALIBRATION = 2,
-	START_STOP = 3,
-	DEVICE_AVAILABLE = 4,
-	CAPTURE_DATA_HEADER = 5,
-	CAPTURE_DATA = 6,
-	ACKNOWLEDGEMENT = 7
+	uint32_t id0;
+	uint32_t id1 __attribute__ ((packed));
+	uint8_t nodeInfo;
 	
-} packet_type_e;
+} MessageType_Identification;
 
 typedef struct
 {
 	
-	uint8_t origin_id,
-		destination_id,
-		message_type,
-		sequence_number;
-	uint32_t send_time;
+	uint32_t latitude;
+	uint32_t longitude;
+	uint32_t elevation;
+	uint16_t last_seq_num;
 	
-} packet_header_t;
+} MessageType_NodePosition;
 
 typedef struct
 {
+	
+	uint16_t seq_num;
+	struct
+	{
+		uint32_t latitude;
+		uint32_t longitude;
+	} waypoints[3];
+	
+} MessageType_Waypoint;
 
-	packet_header_t header;
-	uint8_t packet_payload[24];
+typedef struct
+{
+	
+	uint8_t message[26];
+	
+} MessageType_Message;
 
-} packet_t;
+typedef struct
+{
+	
+	uint8_t originId;
+	uint8_t destinationId;
+	uint8_t ttl;
+	uint8_t msgType;
+	uint16_t timestamp __attribute__ ((packed));
+	union
+	{
+		
+		MessageType_Identification identification __attribute__ ((packed));
+		MessageType_NodePosition nodePosition __attribute__ ((packed));
+		MessageType_Waypoint waypoint __attribute__ ((packed));
+		MessageType_Message message;
+		
+	} payload;
+	
+} Packet;
 
 #endif
