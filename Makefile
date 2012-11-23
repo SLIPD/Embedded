@@ -89,6 +89,7 @@ efm32lib/src/efm32_adc.c \
 efm32lib/src/efm32_rtc.c \
 main.c \
 led.c \
+trace.c \
 i2cdrv.c \
 display.c
 

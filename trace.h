@@ -2,6 +2,6 @@
 #define __TRACE_H__
 
 void TRACE_Init();
-void TRACE(char* msg);
+void TRACE(char *format, ...);
 
 #endif

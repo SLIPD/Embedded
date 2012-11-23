@@ -104,4 +104,5 @@
 #define NRF_FLUSH_TX      0xE1
 #define NRF_FLUSH_RX      0xE2
 #define NRF_REUSE_TX_PL   0xE3
+#define NRF_W_TX_PAYLOAD_NOACK  0xB0
 #define NRF_NOP           0xFF

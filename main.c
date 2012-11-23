@@ -12,6 +12,7 @@
 #include <stdbool.h>
 
 #include "led.h"
+#include "trace.h"
 
 #include "i2cdrv.h"
 #include "display.h"
@@ -51,13 +52,37 @@ int main()
 	
 	// init LEDs
 	LED_Init();
-        
-        while(1)
-        {
-            
-            DISPLAY_Update();   
-        }
-        
+
+	// set up trace
+	TRACE_Init();
+	
+	// GPS Init
+	
+	// Display init
+	
+	// display getting fix message
+	
+	// radio init
+	
+	// radio get id
+	
+	// wait for gps initial fix
+	
+	// enable tdma
+	
+	while(1)
+	{
+		
+		// handle radio msgs
+		
+		// display update
+		
+		// gps update
+		
+		// sleep until irq
+		
+	}
+	
 }
 
 void enableInterrupts()
@@ -70,9 +95,6 @@ void enableInterrupts()
 	
 	NVIC_EnableIRQ(TIMER0_IRQn);
 	NVIC_EnableIRQ(TIMER1_IRQn);
-	
-	NVIC_EnableIRQ(UART1_TX_IRQn);
-	NVIC_EnableIRQ(UART1_RX_IRQn);
 	
 }
 
