@@ -12,6 +12,7 @@
 #include <stdbool.h>
 
 #include "led.h"
+#include "trace.h"
 
 void initClocks();
 void enableTimers();
@@ -32,7 +33,15 @@ int main()
 	// init LEDs
 	LED_Init();
 	
+	// set up trace
+	TRACE_Init();
 	
+	int i = 0;
+	while(1)
+	{
+		TRACE("%i: hello world\n",i);
+		i++;
+	}
 	
 }
 
@@ -46,9 +55,6 @@ void enableInterrupts()
 	
 	NVIC_EnableIRQ(TIMER0_IRQn);
 	NVIC_EnableIRQ(TIMER1_IRQn);
-	
-	NVIC_EnableIRQ(UART1_TX_IRQn);
-	NVIC_EnableIRQ(UART1_RX_IRQn);
 	
 }
 
