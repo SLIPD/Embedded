@@ -9,7 +9,6 @@
 #include "string.h"
 #include <stdarg.h>
 
-#include "trace.h"
 #include "led.h"
 
 /* prototypes */

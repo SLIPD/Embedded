@@ -6,12 +6,22 @@
 #include "efm32_cmu.h"
 #include "efm32_timer.h"
 #include "efm32_int.h"
+#include "efm32_i2c.h"
 
 #include <stdint.h>
 #include <stdbool.h>
 
 #include "led.h"
 
+#include "i2cdrv.h"
+#include "display.h"
+
+// Global variables
+DISPLAY_Message displayMessage;
+char t_str [32]; // top line
+char b_str [32]; // bottom line
+
+// Prototypes
 void initClocks();
 void enableTimers();
 void enableInterrupts();
@@ -27,12 +37,27 @@ int main()
 	
 	// start clocks
 	initClocks();
+             
+        // I2C setup
+        I2C_Setup();
+        
+        // init display
+        DISPLAY_Init();
+        DISPLAY_InitMessage(&displayMessage);
+        
+        displayMessage.topLine=true;
+        displayMessage.message=("lop_line");
+        DISPLAY_SetMessage(&displayMessage); 
 	
 	// init LEDs
 	LED_Init();
-	
-	
-	
+        
+        while(1)
+        {
+            
+            DISPLAY_Update();   
+        }
+        
 }
 
 void enableInterrupts()
