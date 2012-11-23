@@ -11,9 +11,6 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#include "scheduler.h"
-#include "tasks.h"
-#include "system.h"
 #include "led.h"
 
 void initClocks();
@@ -32,37 +29,15 @@ int main()
 	// start clocks
 	initClocks();
 	
-	// init timer service
-	TIMER_InitCallbacks();
-	
 	// init LEDs
 	LED_Init();
 	
-	// init trace
-	TRACE_Init();
 	
-	// init scheduler
-	SCHEDULER_Init();
-	
-	// enable interrupts
-	enableInterrupts();
-	
-	// init tasks
-	SCHEDULER_TaskInit(&radio_init_task, radio_init_task_entrypoint);
-	SCHEDULER_TaskInit(&display_init_task, display_init_task_entrypoint);
-	
-	// run
-	SCHEDULER_Run();
 	
 }
 
 void enableInterrupts()
 {
-	
-	NVIC_EnableIRQ(SysTick_IRQn);
-	NVIC_EnableIRQ(PendSV_IRQn);
-	NVIC_SetPriority(PendSV_IRQn, 7);
-	NVIC_SetPriority(SysTick_IRQn, 7);
 	
 	NVIC_EnableIRQ(USART2_TX_IRQn);
 	NVIC_EnableIRQ(USART2_RX_IRQn);
@@ -74,8 +49,6 @@ void enableInterrupts()
 	
 	NVIC_EnableIRQ(UART1_TX_IRQn);
 	NVIC_EnableIRQ(UART1_RX_IRQn);
-	NVIC_SetPriority(UART1_TX_IRQn, 6);
-	NVIC_SetPriority(UART1_RX_IRQn, 6);
 	
 }
 
