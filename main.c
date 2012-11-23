@@ -51,7 +51,6 @@ void updateLEDs(uint8_t color);
 /* functions */
 void wait(uint32_t ms)
 {
-
 	uint32_t time, 
 		clockFreq = CMU_ClockFreqGet(cmuClock_RTC);
 
@@ -137,15 +136,16 @@ void startupLEDs()
 
 void InitClocks()
 {
-	/* Starting LFXO and waiting until it is stable */
+
+  /* Starting LFXO and waiting until it is stable */
   CMU_OscillatorEnable(cmuOsc_LFXO, true, true);
   
   // starting HFXO, wait till stable
   CMU_OscillatorEnable(cmuOsc_HFXO, true, true);
-	
+
   // route HFXO to CPU
   CMU_ClockSelectSet(cmuClock_HF, cmuSelect_HFXO);
-	
+
   /* Routing the LFXO clock to the RTC */
   CMU_ClockSelectSet(cmuClock_LFA, cmuSelect_LFXO);
   CMU_ClockSelectSet(cmuClock_LFB, cmuSelect_LFXO);
@@ -198,7 +198,6 @@ int main()
 	LED_Init();
         
 	// show startup LEDs
-	startupLEDs();
         
 	// enable gpio interrupts
 	NVIC_ClearPendingIRQ(GPIO_EVEN_IRQn);
@@ -278,9 +277,9 @@ int main()
            
             int16_t heading = ieCompass(magReading.x, magReading.y, magReading.z, accelReading.x, accelReading.y, accelReading.z);
 
-            sprintf(t_str,"heading 0x%4.4x %d degrees\n", heading, heading/100);
+            sprintf(t_str,"heading 0x%4.4x %d %.2f degrees\n", heading, heading, (float)heading/100);
             TRACE(t_str);
             
-            wait(2000);
+            wait(1000);
        }
 }

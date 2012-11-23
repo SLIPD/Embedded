@@ -24,24 +24,24 @@ void eCompassInit()
     
     uint16_t i = 0;
     uint16_t preValues = 500;
-    int16_t x[500];
-    int16_t y[500];
-    int16_t z[500];
+    int16_t x[preValues];
+    int16_t y[preValues];
+    int16_t z[preValues];
     
     // Get values whilst rotating the speck
     while (i < preValues)
     {
         if(MAGRegRead(DR_STATUS_REG) & ZYXDR_MASK)
         {
-            TRACE("getting values!\n");
+            TRACE("Getting values!\n");
             MAGRegReadN(OUT_X_MSB_REG, 6, buf);
             magReading.x = buf[0]<<8 | buf[1];
             magReading.y = buf[2]<<8 | buf[3];
             magReading.z = buf[4]<<8 | buf[5];
             
-            x[i] = magReading.x;
-            y[i] = magReading.y;
-            z[i] = magReading.z;
+            x[i] = (int16_t) magReading.x;
+            y[i] = (int16_t) magReading.y;
+            z[i] = (int16_t) magReading.z;
             i++;
         }  
     }
@@ -53,6 +53,7 @@ void eCompassInit()
     int16_t zMin = z[0];
     int16_t zMax = z[0];
     
+    // Find max and min of calibration matrix in each axis
     for(i = 1; i < preValues; i++)
     {
         // x
@@ -87,11 +88,11 @@ void eCompassInit()
 
     }
     
-    iVx = (int16_t) (xMax + xMin) / 2;
-    iVy = (int16_t) (yMax + yMin) / 2;
-    iVz = (int16_t) (zMax + zMin) / 2;
+    iVx = (int16_t) ((xMax + xMin) / 2);
+    iVy = (int16_t) ((yMax + yMin) / 2);
+    iVz = (int16_t) ((zMax + zMin) / 2);
     
-    sprintf(t_str, "iVx = 0x%4.4x, %d, iVy = 0x%4.4x, %d, iVz = 0x%4.4x, %d\n ", iVx, iVx, iVy, iVy, iVz, iVz);
+    sprintf(t_str, "iVx = 0x%4.4x %d\niVy = 0x%4.4x %d\niVz = 0x%4.4x %d\n ", iVx, iVx, iVy, iVy, iVz, iVz);
     TRACE(t_str);
 }
 
@@ -147,7 +148,7 @@ int16_t iTrig(int16_t ix, int16_t iy)
     
     // calculate ix * ix and hyp * hyp
     ixsq = (uint32_t) (ix * ix);
-    ihypsq = (uint32_t) (ixsq + iy * iy);
+    ihypsq = (uint32_t) (ixsq + (iy * iy);
     
     // set result r to zero and binary search step to 16384 (0.5)
     ir = 0;
@@ -301,7 +302,7 @@ int16_t iDivide(int16_t iy, int16_t ix)
         if (itmp <= iy)
         {
             ir += idelta;
-        }
+        }       
         idelta = (int16_t) (idelta >> 1);
     } while (idelta >= MINDELTADIV);
     
@@ -316,7 +317,7 @@ int16_t ieCompass(int16_t magX, int16_t magY, int16_t magZ, int16_t accelX, int1
     // Hard iron off setting here if done
     magX -= iVx;
     magY -= iVy;
-    //magZ -= iVz;
+    magZ -= iVz;
     
     iPhi = iHundredAtan2Deg(accelY, accelZ);
 
@@ -349,7 +350,7 @@ int16_t ieCompass(int16_t magX, int16_t magY, int16_t magZ, int16_t accelX, int1
     // Correct cos if pitch in range
     if (iCos < 0)
     {
-        iCos = (int16_t) - iCos;
+        iCos = (int16_t) -iCos;
     }
 
     // de rotate by Theta
@@ -357,7 +358,7 @@ int16_t ieCompass(int16_t magX, int16_t magY, int16_t magZ, int16_t accelX, int1
     iBfz = (int16_t) ((-magX * iSin + magZ * iCos) >> 15);
 
     // Calculate current yaw = e-compass angle Psi
-    iPsi = iHundredAtan2Deg((int16_t)- iBfy, iBfx);
+    iPsi = iHundredAtan2Deg((int16_t)-iBfy, iBfx);
     
     return (int16_t) iPsi;
             
