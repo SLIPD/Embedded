@@ -17,6 +17,8 @@
 #include "i2cdrv.h"
 #include "display.h"
 
+#include "gps.h"
+
 // Global variables
 DISPLAY_Message displayMessage;
 char t_str [32]; // top line
@@ -42,14 +44,22 @@ int main()
         // I2C setup
         I2C_Setup();
         
+        TRACE_Init();
+        TRACE("Trace started!\n");
+        
         // init display
         DISPLAY_Init();
         DISPLAY_InitMessage(&displayMessage);
         
-        displayMessage.topLine=true;
-        displayMessage.message=("lop_line");
+
+	displayMessage.topLine=true;
+//        displayMessage.message=("123456789");
+        displayMessage.message=("willdalegerald");
+        DISPLAY_SetMessage(&displayMessage);         
+        displayMessage.topLine=false;
+        displayMessage.message=("1ABCDEFGH");
         DISPLAY_SetMessage(&displayMessage); 
-	
+        
 	// init LEDs
 	LED_Init();
 
@@ -76,7 +86,7 @@ int main()
 		// handle radio msgs
 		
 		// display update
-		
+                DISPLAY_Update();    
 		// gps update
 		
 		// sleep until irq
@@ -134,7 +144,12 @@ void initClocks()
 
 	// enable radio usart
 	CMU_ClockEnable(cmuClock_USART2, true);
-	
+        
+        // !!!
+        // FOR GPS, ENABLE CLOCK FOR LEUART AND LOW ENERGY MODULES
+	// !!!
+//        CMU_ClockEnable(cmuClock_LEUART1, true);
+        
 	// enable pc serial
 	CMU_ClockEnable(cmuClock_UART1, true);
 	

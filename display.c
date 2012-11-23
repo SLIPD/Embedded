@@ -8,6 +8,7 @@
 #include "stdlib.h"
 #include "string.h"
 #include <stdarg.h>
+#include "trace.h"
 
 #include "led.h"
 
@@ -113,7 +114,7 @@ void DISPLAY_Update()
 
 void DISPLAY_Init()
 {
-	// set up screen
+	// set up screen (in documentation)
 	DISPLAY_sendByte(0x00,0x38);
 	DISPLAY_sendByte(0x00,0x39);
 	DISPLAY_sendByte(0x00,0x14);
@@ -151,6 +152,7 @@ void DISPLAY_Init()
 
 }
 
+// Initialise DISPLAY_message
 void DISPLAY_InitMessage(DISPLAY_Message *msg)
 {
 	msg->message = NULL;
@@ -159,6 +161,7 @@ void DISPLAY_InitMessage(DISPLAY_Message *msg)
 	msg->enabled = true;
 }
 
+// WRite message to screen
 void DISPLAY_SetMessage(DISPLAY_Message *msg)
 {
 
@@ -173,6 +176,7 @@ void DISPLAY_SetMessage(DISPLAY_Message *msg)
 
 }
 
+// De enable lines
 void DISPLAY_ClearLine(bool topLine)
 {
 	if (topLine)
@@ -181,12 +185,14 @@ void DISPLAY_ClearLine(bool topLine)
 		line2.enabled = false;
 }
 
+// Clear the screen
 void DISPLAY_Clear()
 {
 	DISPLAY_ClearLine(true);
 	DISPLAY_ClearLine(false);
 }
 
+// Write data over I2C from screen as single byte
 void DISPLAY_sendByte(uint8_t control, uint8_t data)
 {
 
@@ -204,6 +210,7 @@ void DISPLAY_sendByte(uint8_t control, uint8_t data)
 
 }
 
+// Write data over I2C from screen as payload (multiple bytes)
 void DISPLAY_sendPayload(uint8_t control, uint8_t *data, uint8_t len)
 {
 
@@ -221,6 +228,7 @@ void DISPLAY_sendPayload(uint8_t control, uint8_t *data, uint8_t len)
 
 }
 
+// Read data over I2C from screen as single byte
 void DISPLAY_receiveByte(uint8_t control, uint8_t *data)
 {
 
@@ -238,6 +246,7 @@ void DISPLAY_receiveByte(uint8_t control, uint8_t *data)
 
 }
 
+// Read data over I2C from screen as payload (multiple bytes)
 void DISPLAY_receivePayload(uint8_t control, uint8_t *data, uint8_t len)
 {
 
@@ -255,6 +264,7 @@ void DISPLAY_receivePayload(uint8_t control, uint8_t *data, uint8_t len)
 
 }
 
+// Set position of char on line (top or bottom)
 void DISPLAY_SetPosition(bool topLine, uint8_t pos)
 {
 
@@ -266,6 +276,7 @@ void DISPLAY_SetPosition(bool topLine, uint8_t pos)
 
 }
 
+// Transfer bits via I2C to screen
 I2C_TransferReturn_TypeDef DISPLAY_i2cTransfer(I2C_TransferSeq_TypeDef *seq)
 {
 	I2C_TransferReturn_TypeDef ret;

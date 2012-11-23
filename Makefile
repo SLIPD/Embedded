@@ -91,7 +91,8 @@ main.c \
 led.c \
 trace.c \
 i2cdrv.c \
-display.c
+display.c \
+gps.c 
 
 S_SRC +=  \
 CMSIS/CM3/DeviceSupport/EnergyMicro/EFM32/startup/cs3/startup_efm32gg.s
