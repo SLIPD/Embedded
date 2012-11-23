@@ -40,7 +40,9 @@ uint8_t buf[192*2];
 Mag_Vector_Type         magReading;
 Accel_Vector_Type       accelReading;
 
-char t_str [192*2];
+char trace_str[300];
+char t_str [32]; // top line
+char b_str [32]; // bottom line
 
 /* prototypes */
 void InitClocks();
@@ -205,22 +207,14 @@ int main()
         NVIC_ClearPendingIRQ(TIMER0_IRQn);
         NVIC_EnableIRQ(TIMER0_IRQn);
         
-        // init display AND I2C
-//        DISPLAY_Init();
-//        DISPLAY_InitMessage(&displayMessage);
+        // I2C setup
+        I2C_Setup();
         
-	// init reset pin
-	GPIO_PinModeSet(gpioPortD,10,gpioModePushPull,1);
-	GPIO_PinModeSet(gpioPortD, 15, gpioModeWiredAnd, 1);
-	GPIO_PinModeSet(gpioPortD, 14, gpioModeWiredAnd, 1);
-
-	// init i2c
-	I2C0->ROUTE |= I2C_ROUTE_SDAPEN | I2C_ROUTE_SCLPEN | I2C_ROUTE_LOCATION_LOC3;
-
-	I2C_Init_TypeDef i2cInit = I2C_INIT_DEFAULT;
-
-	I2C_Init(I2C0, &i2cInit);
+        // init display
+        DISPLAY_Init();
+        DISPLAY_InitMessage(&displayMessage);
         
+
         // init MAG
         MAGInit(); // Set up magnetometer
         MAGRegReadN(OUT_X_MSB_REG, 6, buf); // Read MSB of X 
@@ -228,8 +222,8 @@ int main()
         magReading.y = buf[2]<<8 | buf[3];
         magReading.z = buf[4]<<8 | buf[5];
         uint8_t id = MAGRegRead(WHO_AM_I);
-        sprintf(t_str, "MAG3110 WHO AM I: 0x%2x\n", id);
-        TRACE(t_str);
+        sprintf(trace_str, "MAG3110 WHO AM I: 0x%2x\n", id);
+        TRACE(trace_str);
         
         // init MMA
         MMAInit(); // Set up accelerometer
@@ -238,8 +232,8 @@ int main()
         accelReading.y = ((int16_t) (buf[2]<<8 | buf[3])) >> 0x2;
         accelReading.z = ((int16_t) (buf[4]<<8 | buf[5])) >> 0x2;
         id = MMARegRead(WHO_AM_I_REG);
-        sprintf(t_str, "MMA WHO AM I: 0x%2x\n", id);
-        TRACE(t_str);
+        sprintf(trace_str, "MMA WHO AM I: 0x%2x\n", id);
+        TRACE(trace_str);
         
 	NVIC_EnableIRQ(GPIO_EVEN_IRQn);
 	NVIC_EnableIRQ(GPIO_ODD_IRQn);
@@ -252,6 +246,11 @@ int main()
 	LED_Off(GREEN);
         
         INT_Enable();
+        
+        displayMessage.topLine=true;
+        sprintf(t_str, "top_line");
+        displayMessage.message=(t_str);
+        DISPLAY_SetMessage(&displayMessage); 
         
         TRACE("eCompassInit() called\n!");
         eCompassInit();
@@ -277,9 +276,10 @@ int main()
            
             int16_t heading = ieCompass(magReading.x, magReading.y, magReading.z, accelReading.x, accelReading.y, accelReading.z);
 
-            sprintf(t_str,"heading 0x%4.4x %d %.2f degrees\n", heading, heading, (float)heading/100);
-            TRACE(t_str);
+            sprintf(trace_str,"heading 0x%4.4x %d %.2f degrees\n", heading, heading, (float)heading/100);
+            TRACE(trace_str);
             
+            DISPLAY_Update();   
             wait(1000);
        }
 }

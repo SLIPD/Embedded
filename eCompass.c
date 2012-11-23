@@ -11,7 +11,7 @@ int16_t iBfx, iBfy, iBfz;
 // Hard iron estimate
 int16_t iVx, iVy, iVz;
 
-char t_str [192*2];
+char trace_str [300];
 
 const int16_t K1 = 5701;
 const int16_t K2 = -1645;
@@ -23,7 +23,7 @@ void eCompassInit()
     Mag_Vector_Type magReading;
     
     uint16_t i = 0;
-    uint16_t preValues = 500;
+    uint16_t preValues = 10;
     int16_t x[preValues];
     int16_t y[preValues];
     int16_t z[preValues];
@@ -92,8 +92,8 @@ void eCompassInit()
     iVy = (int16_t) ((yMax + yMin) / 2);
     iVz = (int16_t) ((zMax + zMin) / 2);
     
-    sprintf(t_str, "iVx = 0x%4.4x %d\niVy = 0x%4.4x %d\niVz = 0x%4.4x %d\n ", iVx, iVx, iVy, iVy, iVz, iVz);
-    TRACE(t_str);
+    sprintf(trace_str, "iVx = 0x%4.4x %d\niVy = 0x%4.4x %d\niVz = 0x%4.4x %d\n ", iVx, iVx, iVy, iVy, iVz, iVz);
+    TRACE(trace_str);
 }
 
 /* iTrig
@@ -148,7 +148,7 @@ int16_t iTrig(int16_t ix, int16_t iy)
     
     // calculate ix * ix and hyp * hyp
     ixsq = (uint32_t) (ix * ix);
-    ihypsq = (uint32_t) (ixsq + (iy * iy);
+    ihypsq = (uint32_t) (ixsq + (iy * iy));
     
     // set result r to zero and binary search step to 16384 (0.5)
     ir = 0;

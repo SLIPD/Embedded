@@ -39,7 +39,7 @@ extern "C" {
  *****************************   PROTOTYPES   **********************************
  ******************************************************************************/
 
-void I2CDRV_Init(const I2C_Init_TypeDef *init);
+void I2C_Setup();
 I2C_TransferReturn_TypeDef I2CDRV_Transfer(I2C_TransferSeq_TypeDef *seq);
 
 #ifdef __cplusplus

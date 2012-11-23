@@ -114,18 +114,6 @@ void DISPLAY_Update()
 
 void DISPLAY_Init()
 {
-
-	// init reset pin
-	GPIO_PinModeSet(gpioPortD,10,gpioModePushPull,1);
-	GPIO_PinModeSet(gpioPortD, 15, gpioModeWiredAnd, 1);
-	GPIO_PinModeSet(gpioPortD, 14, gpioModeWiredAnd, 1);
-
-	// init i2c
-	I2C0->ROUTE |= I2C_ROUTE_SDAPEN | I2C_ROUTE_SCLPEN | I2C_ROUTE_LOCATION_LOC3;
-
-	I2C_Init_TypeDef i2cInit = I2C_INIT_DEFAULT;
-
-	I2C_Init(I2C0, &i2cInit);
 	// set up screen
 	DISPLAY_sendByte(0x00,0x38);
 	DISPLAY_sendByte(0x00,0x39);
