@@ -36,11 +36,31 @@ int main()
 	// set up trace
 	TRACE_Init();
 	
-	int i = 0;
+	// GPS Init
+	
+	// Display init
+	
+	// display getting fix message
+	
+	// radio init
+	
+	// radio get id
+	
+	// wait for gps initial fix
+	
+	// enable tdma
+	
 	while(1)
 	{
-		TRACE("%i: hello world\n",i);
-		i++;
+		
+		// handle radio msgs
+		
+		// display update
+		
+		// gps update
+		
+		// sleep until irq
+		
 	}
 	
 }
