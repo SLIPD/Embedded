@@ -23,6 +23,30 @@ void enableTimers();
 void enableInterrupts();
 void basestation_main();
 
+void wait(uint32_t ms)
+{
+	uint32_t time, 
+			clockFreq = CMU_ClockFreqGet(cmuClock_RTC);
+
+	while (ms > 0)
+	{
+
+		time = RTC_CounterGet();
+
+		if (16777215 - time < ((double)ms / 1000.0) * clockFreq)
+		{
+			ms -= (uint32_t)(1000.0 * ((16777215 - time) / (double)clockFreq));
+			while (RTC_CounterGet() > time);
+		}
+		else
+		{
+			while (RTC_CounterGet() < time + ((double)ms / 1000.0) * clockFreq);
+			break;
+		}
+		
+	}
+}
+
 int main()
 {
 	
@@ -40,12 +64,20 @@ int main()
 	
 	#ifdef PPS_MASTER
 	
-	while(1)
+	GPIO_PinModeSet(gpioPortD, 10, gpioModePushPull, 0);
+	
+	do
 	{
 		
-		
+		LED_On(GREEN);
+		GPIO_PinOutSet(gpioPortD, 10);
+		wait(200);
+		LED_Off(GREEN);
+		GPIO_PinOutClear(gpioPortD, 10);
+		wait(800);
 		
 	}
+	while(1);
 	
 	#endif
 	
@@ -102,7 +134,9 @@ void enableInterrupts()
 	NVIC_EnableIRQ(GPIO_EVEN_IRQn);
 	NVIC_SetPriority(GPIO_EVEN_IRQn, 6);
 	
+	NVIC_EnableIRQ(TIMER0_IRQn);
 	NVIC_EnableIRQ(TIMER1_IRQn);
+	NVIC_SetPriority(TIMER0_IRQn, 4);
 	NVIC_SetPriority(TIMER1_IRQn, 4);
 
 	NVIC_EnableIRQ(USART2_TX_IRQn);
