@@ -239,6 +239,8 @@ void basestation_main()
 	while (1)
 	{
 		
+		RADIO_HandleMessages();
+		
 		if (RADIO_TxBufferSize())
 		{
 			

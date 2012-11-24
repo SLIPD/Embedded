@@ -65,29 +65,26 @@ void TRACE(char *format, ...)
 	
 	#ifndef BASESTATION
 	
-		char msg[512];
-		memset(msg,0,512);
+		char msg[255];
+		memset(msg,0,255);
 		
 		va_list args;
 		va_start( args, format );
 		vsprintf(msg, format, args );
+		va_end( args );
 		
 		INT_Disable();
 		int i;
 		for (i = 0; i < strlen(msg); i++)
 		{
-			trace_buf[trace_writePosition] = msg[i];
-			trace_writePosition = (trace_writePosition + 1) % TRACE_BUF_SIZE;
-			if (trace_writePosition == trace_readPosition)
-			{
-				break;
-			}
+			//trace_buf[trace_writePosition] = msg[i];
+			//trace_writePosition = (trace_writePosition + 1) % TRACE_BUF_SIZE;
+			while (!(UART1->STATUS & UART_STATUS_TXBL));
+			UART1->TXDATA = msg[i];
 		}
 		INT_Enable();
 		
-		USART_IntEnable(UART1, UART_IF_TXBL);
-		
-		va_end( args );
+		//USART_IntEnable(UART1, UART_IF_TXBL);
 		
 	#endif
 	

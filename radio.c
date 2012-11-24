@@ -16,6 +16,7 @@
 #include "trace.h"
 #include "queue.h"
 #include "time_schedule.h"
+#include "config.h"
 
 /* variables */
 uint8_t txBufferMem[RADIO_BUFFER_SIZE * 32],
@@ -79,8 +80,11 @@ void GPIO_EVEN_IRQHandler()
 	{
 		
 		//TRACE("%i: RADIO IRQ\n", TIMER_CounterGet(TIMER1));
-		radio_irq_flags = radio_readRegister(NRF_STATUS);
-		radio_writeRegister(NRF_STATUS,0x70);
+		if (USART_Ready())
+		{
+			radio_irq_flags = radio_readRegister(NRF_STATUS);
+			radio_writeRegister(NRF_STATUS,0x70);
+		}
 		GPIO_IntClear((1 << NRF_INT_PIN));
 		
 	}
@@ -248,9 +252,19 @@ bool RADIO_Recv(uint8_t payload[32])
 void radio_storePacket(uint8_t *data, uint16_t size)
 {
 	
+	Packet *p = (Packet*)&data[1];
+	#ifdef BASESTATION
+		
+		if (p->destinationId == 0x00 || p->destinationId == 0xFF)
+		{
+			QUEUE_Write(&rxBuffer, &data[1]);
+		}
+		return;
+		
+	#endif
+	
 	rx_packet_count++;
 	
-	Packet *p = (Packet*)&data[1];
 	if (p->destinationId == node_id)
 	{
 		QUEUE_Write(&rxBuffer, &data[1]);
@@ -354,6 +368,8 @@ void RADIO_GetID()
 	RADIO_SetMode(RX);
 	RADIO_Enable(RX);
 	
+	TRACE("GET ID\n");
+	
 	bool identified = false;
 	while(!identified)
 	{
@@ -365,7 +381,8 @@ void RADIO_GetID()
 			RADIO_Send((uint8_t*)&ident);
 			RADIO_TxBufferFill();
 			RADIO_Enable(TX);
-			while (RADIO_Sending());
+			while(RADIO_Sending())
+				RADIO_HandleMessages();
 			RADIO_Enable(OFF);
 			RADIO_SetMode(RX);
 			RADIO_Enable(RX);
@@ -377,6 +394,7 @@ void RADIO_GetID()
 		while (RADIO_Recv((uint8_t*)&incoming))
 		{
 			
+			/*
 			uint8_t* pos = (uint8_t*)&incoming;
 			int i;
 			for (i = 0; i < 32; i++)
@@ -384,7 +402,7 @@ void RADIO_GetID()
 				TRACE("0x%2.2X ", *pos++);
 			}
 			TRACE("\n");
-			
+			*/
 				
 			if (incoming.originId == 0x00 &&
 				incoming.destinationId == 0xFF &&
@@ -420,10 +438,21 @@ void RADIO_GetID()
 			next_send -= 32768;
 		
 		last = RTC_CounterGet();
+		RADIO_HandleMessages();
 		
 	}
 	
 	TRACE("IDENTIFIED NODE ID:%i\n", node_id);
+	
+	TRACE("TDMA CONFIG\n");
+				TRACE("GP: %i\nTXP: %i\nTXP_P: %i\nNC: %i\nC: \nSP: %i\nP: %i\n",
+					tdma_gp,
+					tdma_txp,
+					tdma_txp_p,
+					tdma_nc,
+					tdma_c,
+					tdma_sp,
+					tdma_p);
 	
 }
 

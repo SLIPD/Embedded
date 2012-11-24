@@ -23,6 +23,8 @@ usart_transfer_t cur_ut,
 	ut_mem[16];
 queue_t ut_q;
 
+bool ready = false;
+
 /* prototypes */
 void usart_enableInterrupts(USART_TypeDef *usart);
 void usart_disableInterrupts(USART_TypeDef *usart);
@@ -30,6 +32,11 @@ void USART_TX(USART_TypeDef *usart, uint8_t usart_idx);
 void USART_RX(USART_TypeDef *usart, uint8_t usart_idx);
 
 /* functions */
+bool USART_Ready()
+{
+	return ready;
+}
+
 void USART_Init(USART_TypeDef *usart, uint8_t usart_idx, uint8_t location)
 {
 	
@@ -59,6 +66,8 @@ void USART_Init(USART_TypeDef *usart, uint8_t usart_idx, uint8_t location)
 	usart->ROUTE |= USART_ROUTE_TXPEN | USART_ROUTE_RXPEN | USART_ROUTE_CLKPEN;
 	
 	cur_ut.active = false;
+	
+	ready = true;
 	
 }
 
