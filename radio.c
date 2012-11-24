@@ -248,9 +248,24 @@ bool RADIO_Recv(uint8_t payload[32])
 void radio_storePacket(uint8_t *data, uint16_t size)
 {
 	
-	//TRACE("%i: storePacket\n", TIMER_CounterGet(TIMER1));
-	QUEUE_Write(&rxBuffer, &data[1]);
 	rx_packet_count++;
+	
+	Packet *p = (Packet*)&data[1];
+	if (p->destinationId == node_id)
+	{
+		QUEUE_Write(&rxBuffer, &data[1]);
+		return;
+	}
+	
+	if (p->destinationId == 0xFF)
+	{
+		QUEUE_Write(&rxBuffer, &data[1]);
+	}
+	
+	if (--p->ttl == 0)
+		return;
+	
+	QUEUE_Write(&txBuffer, &data[1]);
 	
 }
 
@@ -343,26 +358,6 @@ void RADIO_GetID()
 	while(!identified)
 	{
 		
-		
-		// fake
-		node_id = 2;
-		
-		tdma_gp = 500;
-		tdma_txp = 3000;
-		tdma_txp_p = 300;
-		tdma_nc = 8;
-		tdma_c = 40;
-		
-		tdma_sp = 2*tdma_gp + tdma_txp;
-		tdma_p = tdma_sp * tdma_nc;
-		
-		identified = true;
-		
-		break;
-		
-		
-		
-		
 		if (RTC_CounterGet() > next_send)
 		{
 			RADIO_Enable(OFF);
@@ -401,11 +396,11 @@ void RADIO_GetID()
 				// store tdma details
 				node_id = incoming.payload.identification.nodeId;
 				
-				tdma_gp = 100;
-				tdma_txp = 1800;
-				tdma_txp_p = 100;
-				tdma_nc = 16;
-				tdma_c = 40;
+				tdma_gp = incoming.payload.identification.tdma_gp;
+				tdma_txp = incoming.payload.identification.tdma_txp;
+				tdma_txp_p = incoming.payload.identification.tdma_txp_p;
+				tdma_nc = incoming.payload.identification.nc;
+				tdma_c = incoming.payload.identification.c;
 				
 				tdma_sp = 2*tdma_gp + tdma_txp;
 				tdma_p = tdma_sp * tdma_nc;
@@ -795,15 +790,5 @@ void RADIO_HandleMessages()
 		}
 		
 	}
-	
-	static int i;
-	
-	uint8_t p[32];
-	memset(p,node_id,32);
-	RADIO_Send(p);
-	
-	if (RADIO_Recv(p))
-		if (p[0] != 3)
-			TRACE("NOT EQUAL\n");
 	
 }
