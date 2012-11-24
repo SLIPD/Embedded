@@ -1,4 +1,3 @@
-
 #include "efm32.h"
 
 #include "efm32_chip.h"
@@ -7,16 +6,20 @@
 #include "efm32_cmu.h"
 #include "efm32_timer.h"
 #include "efm32_int.h"
+#include "efm32_usart.h"
 
 #include <stdint.h>
 #include <stdbool.h>
 
 #include "led.h"
 #include "trace.h"
+#include "radio.h"
+#include "config.h"
 
 void initClocks();
 void enableTimers();
 void enableInterrupts();
+void basestation_main();
 
 int main()
 {
@@ -33,22 +36,36 @@ int main()
 	// init LEDs
 	LED_Init();
 	
+	// init irqs
+	enableInterrupts();
+	
 	// set up trace
 	TRACE_Init();
 	
 	// GPS Init
+	
+	
+	// enable basestation if reqd
+	#ifdef BASESTATION
+		
+		basestation_main();
+		
+	#endif
 	
 	// Display init
 	
 	// display getting fix message
 	
 	// radio init
+	RADIO_Init();
 	
 	// radio get id
+	RADIO_GetID();
 	
 	// wait for gps initial fix
 	
 	// enable tdma
+	RADIO_EnableTDMA();
 	
 	while(1)
 	{
@@ -68,13 +85,12 @@ int main()
 void enableInterrupts()
 {
 	
-	NVIC_EnableIRQ(USART2_TX_IRQn);
-	NVIC_EnableIRQ(USART2_RX_IRQn);
-	
 	NVIC_EnableIRQ(GPIO_EVEN_IRQn);
 	
 	NVIC_EnableIRQ(TIMER0_IRQn);
 	NVIC_EnableIRQ(TIMER1_IRQn);
+	NVIC_EnableIRQ(TIMER2_IRQn);
+	NVIC_EnableIRQ(TIMER3_IRQn);
 	
 }
 
@@ -124,5 +140,110 @@ void initClocks()
 	
 	// i2c
 	CMU_ClockEnable(cmuClock_I2C0, true);
+	
+}
+
+void basestation_main()
+{
+	
+	while (!(UART1->STATUS & UART_STATUS_TXBL));
+		
+	while (1)
+	{
+		if ((UART1->STATUS & UART_STATUS_RXDATAV) && UART1->RXDATA == '*')
+			break;
+	}
+	
+	int i;
+	for (i = 0; i < 500000; i++);
+	
+	// wait for GPS fix
+	
+	
+	UART1->TXDATA = '*';
+	
+	// send GPS fix packet to pi
+	
+	
+	RADIO_Init();
+	
+	uint8_t pibound_packet[32],
+		meshbound_packet[32],
+		pibound_position = 32,
+		meshbound_position = 0;
+	bool tx = false;
+	
+	RADIO_Enable(OFF);
+	RADIO_SetMode(RX);
+	RADIO_Enable(RX);
+	
+	while (1)
+	{
+		
+		if (RADIO_TxBufferSize())
+		{
+			
+			if (!RADIO_Sending())
+			{
+			
+				RADIO_Enable(OFF);
+				RADIO_SetMode(TX);
+				RADIO_TxBufferFill();
+				RADIO_Enable(TX);
+				tx = true;
+				
+			}
+			
+		}
+		else
+		{
+			
+			if (tx)
+			{
+				RADIO_Enable(OFF);
+				RADIO_SetMode(RX);
+				RADIO_Enable(RX);
+				tx = false;
+			}
+			
+		}
+		
+		if (UART1->STATUS & UART_STATUS_RXDATAV)
+		{
+			
+			meshbound_packet[meshbound_position++] = UART1->RXDATA;
+			
+			if (meshbound_position == 32)
+			{
+				// check for packets for basestation
+				// (such as switch to TDMA)
+				RADIO_Send(meshbound_packet);
+				meshbound_position = 0;
+			}
+			
+		}
+		
+		if (UART1->STATUS & UART_STATUS_TXBL)
+		{
+			
+			if (pibound_position == 32)
+			{
+				
+				if (RADIO_Recv(pibound_packet))
+				{
+					pibound_position = 0;
+				}
+				else
+				{
+					continue;
+				}
+				
+			}
+			
+			UART1->TXDATA = pibound_packet[pibound_position++];
+			
+		}
+		
+	}
 	
 }

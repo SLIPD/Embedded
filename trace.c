@@ -6,6 +6,7 @@
 #include "efm32_usart.h"
 
 #include "led.h"
+#include "config.h"
 
 #include <stdarg.h>
 #include <stdio.h>
@@ -32,23 +33,27 @@ void TRACE_Init()
 void TRACE(char *format, ...)
 {
 	
-	char msg[255],
-		*pos;
-	memset(msg,0,255);
+	#ifndef BASESTATION
 	
-	va_list args;
-	va_start( args, format );
-	vsprintf(msg, format, args );
+		char msg[255],
+			*pos;
+		memset(msg,0,255);
+		
+		va_list args;
+		va_start( args, format );
+		vsprintf(msg, format, args );
+		
+		int todo, bytesToSend = strlen(msg);
+		pos = msg;
+		for (todo = 0; todo < bytesToSend; todo++) {
+			while (!(UART1->STATUS & USART_STATUS_TXBL));
+			UART1->TXDATA = *pos++;
+		}
+		
+		while (!(UART1->STATUS & USART_STATUS_TXC));
+		
+		va_end( args );
 	
-	int todo, bytesToSend = strlen(msg);
-	pos = msg;
-	for (todo = 0; todo < bytesToSend; todo++) {
-		while (!(UART1->STATUS & USART_STATUS_TXBL));
-		UART1->TXDATA = *pos++;
-	}
-	
-	while (!(UART1->STATUS & USART_STATUS_TXC));
-	
-	va_end( args );
+	#endif
 	
 }

@@ -8,7 +8,7 @@ typedef struct
 	
 	uint32_t id0;
 	uint32_t id1 __attribute__ ((packed));
-	uint8_t nodeInfo;
+	uint8_t nodeId;
 	
 } MessageType_Identification;
 
