@@ -104,6 +104,42 @@ void MAGRegReadN(uint8_t reg1, uint8_t n, uint8_t *array)
     MAG_RegisterGet(I2C0, MAG3110_ADDR_READ, reg1, array, n);
 }
 
+int16_t MAGReadX_16()
+{
+    uint8_t MSB_buf, LSB_buf;
+    
+    MSB_buf = MAGRegRead(MAG_OUT_X_MSB_REG);
+    LSB_buf = MAGRegRead(MAG_OUT_X_LSB_REG);
+    
+    uint16_t ret = (MSB_buf << 8 | LSB_buf);
+    
+    return (int16_t) ret;
+}
+
+int16_t MAGReadY_16()
+{
+    uint8_t MSB_buf, LSB_buf;
+    
+    MSB_buf = MAGRegRead(MAG_OUT_Y_MSB_REG);
+    LSB_buf = MAGRegRead(MAG_OUT_Y_LSB_REG);
+    
+    uint16_t ret = (MSB_buf << 8 | LSB_buf);
+    
+    return (int16_t) ret;
+}
+
+int16_t MAGReadZ_16()
+{
+    uint8_t MSB_buf, LSB_buf;
+    
+    MSB_buf = MAGRegRead(MAG_OUT_Z_MSB_REG);
+    LSB_buf = MAGRegRead(MAG_OUT_Z_LSB_REG);
+    
+    uint16_t ret = (MSB_buf << 8 | LSB_buf);
+    
+    return (int16_t) ret;
+}
+
 /**
  * Sets MAG3110 to STANDBY mode.
  */

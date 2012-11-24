@@ -229,6 +229,11 @@ uint8_t MMARegRead(uint8_t reg);
 //void MMARegWriteN(uint8_t reg1, uint8_t n, uint8_t *array);
 void MMARegReadN(uint8_t reg1, uint8_t n, uint8_t *array);
 
+
+int16_t MMAReadX_14();
+int16_t MMAReadY_14();
+int16_t MMAReadZ_14();
+
 typedef struct {
   int16_t x;
   int16_t y;

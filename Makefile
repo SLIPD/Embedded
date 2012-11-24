@@ -94,6 +94,7 @@ i2cdrv.c \
 display.c \
 MAG3110.c \
 MMA845.c \
+eCompass.c \
 gps.c 
 
 S_SRC +=  \

@@ -164,6 +164,10 @@ extern "C" {
     uint8_t MAGRegRead(uint8_t reg);
     void MAGRegReadN(uint8_t reg1, uint8_t n, uint8_t *array);
     
+    int16_t MAGReadX_16();
+    int16_t MAGReadY_16();
+    int16_t MAGReadZ_16();
+
     void MAGStandby(void);
     void MAGActive(void);
     void MAGInit(void);

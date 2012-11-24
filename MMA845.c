@@ -81,6 +81,42 @@ void MMARegReadN(uint8_t reg1, uint8_t n, uint8_t *array)
 {
 	MMA845X_RegisterGet(I2C0, MMA8451Q_ADDR, reg1, array, n);
 }
+        
+int16_t MMAReadX_14()
+{
+    uint8_t MSB_buf, LSB_buf;
+    
+    MSB_buf = MMARegRead(OUT_X_MSB_REG);
+    LSB_buf = MMARegRead(OUT_X_LSB_REG);
+    
+    uint16_t ret = ((MSB_buf << 8 | LSB_buf) >> 2);
+    
+    return (int16_t) ret;
+}
+
+int16_t MMAReadY_14()
+{
+    uint8_t MSB_buf, LSB_buf;
+    
+    MSB_buf = MMARegRead(OUT_Y_MSB_REG);
+    LSB_buf = MMARegRead(OUT_Y_LSB_REG);
+    
+    uint16_t ret = ((MSB_buf << 8 | LSB_buf) >> 2);
+    
+    return (int16_t) ret;
+}
+
+int16_t MMAReadZ_14()
+{
+    uint8_t MSB_buf, LSB_buf;
+    
+    MSB_buf = MMARegRead(OUT_Z_MSB_REG);
+    LSB_buf = MMARegRead(OUT_Z_LSB_REG);
+    
+    uint16_t ret = ((MSB_buf << 8 | LSB_buf) >> 2);
+    
+    return (int16_t) ret;
+}
 
 void MMAStandby(void) {
   uint8_t r;

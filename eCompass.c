@@ -1,6 +1,7 @@
 #include "eCompass.h"
 #include "MAG3110.h"
 #include "trace.h"
+
 // Source: AN4248
 
 
@@ -23,7 +24,7 @@ void eCompassInit()
     Mag_Vector_Type magReading;
     
     uint16_t i = 0;
-    uint16_t preValues = 10;
+    uint16_t preValues = 500;
     int16_t x[preValues];
     int16_t y[preValues];
     int16_t z[preValues];
@@ -31,13 +32,12 @@ void eCompassInit()
     // Get values whilst rotating the speck
     while (i < preValues)
     {
-        if(MAGRegRead(DR_STATUS_REG) & ZYXDR_MASK)
+        if(MAGRegRead(MAG_DR_STATUS_REG) & MAG_ZYXDR_MASK)
         {
             TRACE("Getting values!\n");
-            MAGRegReadN(OUT_X_MSB_REG, 6, buf);
-            magReading.x = buf[0]<<8 | buf[1];
-            magReading.y = buf[2]<<8 | buf[3];
-            magReading.z = buf[4]<<8 | buf[5];
+            magReading.x = MAGReadX_16();
+            magReading.y = MAGReadY_16();
+            magReading.z = MAGReadZ_16();
             
             x[i] = (int16_t) magReading.x;
             y[i] = (int16_t) magReading.y;
@@ -92,7 +92,7 @@ void eCompassInit()
     iVy = (int16_t) ((yMax + yMin) / 2);
     iVz = (int16_t) ((zMax + zMin) / 2);
     
-    sprintf(trace_str, "iVx = 0x%4.4x %d\niVy = 0x%4.4x %d\niVz = 0x%4.4x %d\n ", iVx, iVx, iVy, iVy, iVz, iVz);
+    sprintf(trace_str, "iVx = 0x%4.4x %d\niVy = 0x%4.4x %d\niVz = 0x%4.4x %d\n", iVx, iVx, iVy, iVy, iVz, iVz);
     TRACE(trace_str);
 }
 

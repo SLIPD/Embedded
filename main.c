@@ -18,6 +18,7 @@
 #include "display.h"
 #include "MAG3110.h"
 #include "MMA845XQ.h"
+#include "eCompass.h"
 
 #include "gps.h"
 
@@ -65,34 +66,22 @@ int main()
         DISPLAY_InitMessage(&displayMessageTop);
         DISPLAY_InitMessage(&displayMessageBottom);
         
-        displayMessageTop.scroll = false;
-        displayMessageTop.message=("  ^   ___   ^   ");
-        DISPLAY_SetMessage(&displayMessageTop); 
-        
-        displayMessageBottom.topLine = false;
-        displayMessageBottom.scroll = false;
-        displayMessageBottom.message=("      __/      ");
-        DISPLAY_SetMessage(&displayMessageBottom);  
-        
 	// display getting fix message
         
         // magnetometer init
         MAGInit(); 
-        MAGRegReadN(MAG_OUT_X_MSB_REG, 6, buf); // Read MSB of X 
-        magReading.x = buf[0]<<8 | buf[1];
-        magReading.y = buf[2]<<8 | buf[3];
-        magReading.z = buf[4]<<8 | buf[5];
+        magReading.x = MAGReadX_16();
+        magReading.y = MAGReadY_16();
+        magReading.z = MAGReadZ_16();
         
-        uint8_t a = MAGRegRead(MAG_SYSMOD);
-        sprintf(str, "SYSMOD = 0x%2.2x, %d\n", a);
-        TRACE(str);
-
         // accelerometer init
         MMAInit();
-        MMARegReadN(OUT_X_MSB_REG, 6, buf); // Read MSB of X 
-        accelReading.x = ((int16_t) (buf[0]<<8 | buf[1])) >> 0x2;
-        accelReading.y = ((int16_t) (buf[2]<<8 | buf[3])) >> 0x2;
-        accelReading.z = ((int16_t) (buf[4]<<8 | buf[5])) >> 0x2;
+        accelReading.x =  MMAReadX_14();
+        accelReading.y =  MMAReadY_14();
+        accelReading.z =  MMAReadZ_14();
+        
+        // eCompass init
+//        eCompassInit();
         
 	// radio init
 	
@@ -108,20 +97,11 @@ int main()
                 
 		// display update
                 DISPLAY_Update();
+                
 		// gps update
-                // If there is new ZYX data available, read
-                if(MAGRegRead(MAG_DR_STATUS_REG) & MAG_ZYXDR_MASK)
-                {
-                    MAGRegReadN(MAG_OUT_X_MSB_REG, 6, buf);
-                    magReading.x = buf[0]<<8 | buf[1];
-                    magReading.y = buf[2]<<8 | buf[3];
-                    magReading.z = buf[4]<<8 | buf[5];
-                    
-                    sprintf(str, "x %d, y %d, z %d\n", magReading.x, magReading.y, magReading.z);
-                    TRACE(str);
-                }
+   
 		// sleep until irq
-                for(int i = 0; i < 1000000; i++);
+                for(int i = 0; i < 10000000; i++);
 	}
 	
 }
