@@ -100,11 +100,22 @@ void enableInterrupts()
 {
 	
 	NVIC_EnableIRQ(GPIO_EVEN_IRQn);
+	NVIC_SetPriority(GPIO_EVEN_IRQn, 6);
 	
-	NVIC_EnableIRQ(TIMER0_IRQn);
 	NVIC_EnableIRQ(TIMER1_IRQn);
-	NVIC_EnableIRQ(TIMER2_IRQn);
-	NVIC_EnableIRQ(TIMER3_IRQn);
+	NVIC_SetPriority(TIMER1_IRQn, 4);
+
+	NVIC_EnableIRQ(USART2_TX_IRQn);
+	NVIC_EnableIRQ(USART2_RX_IRQn);
+	NVIC_SetPriority(USART2_TX_IRQn, 5);
+	NVIC_SetPriority(USART2_RX_IRQn, 5);
+	
+	#ifndef BASESTATION
+		
+		NVIC_EnableIRQ(UART1_TX_IRQn);
+		NVIC_SetPriority(UART1_TX_IRQn, 5);
+		
+	#endif
 	
 }
 

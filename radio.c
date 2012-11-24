@@ -45,6 +45,11 @@ schedule_t radio_schedule;
 
 volatile uint16_t tdma_stage_flags = 0;
 volatile uint8_t radio_irq_flags = 0;
+uint16_t packet_count = 0;
+uint32_t last_tx = 0;
+
+bool wait_callback = false;
+uint8_t readRegisterValue;
 
 /* prototypes */
 void radio_stage1();
@@ -60,6 +65,8 @@ void radio_cs(USART_ChipSelect set);
 uint8_t radio_readRegister(uint8_t reg);
 void radio_writeRegister(uint8_t reg, uint8_t value);
 void radio_config_cc(TIMER_TypeDef *timer, uint8_t cc, uint32_t time, bool high);
+void radio_readRegisterCB(uint8_t *data, uint16_t size);
+void radio_storePacket(uint8_t *data, uint16_t size);
 
 /* functions */
 void GPIO_EVEN_IRQHandler()
@@ -68,13 +75,19 @@ void GPIO_EVEN_IRQHandler()
 	if (GPIO_IntGet() & (1 << NRF_INT_PIN))
 	{
 		
-		TRACE("%i: RADIO IRQ\n", TIMER_CounterGet(TIMER1));
+		//TRACE("%i: RADIO IRQ\n", TIMER_CounterGet(TIMER1));
 		radio_irq_flags = radio_readRegister(NRF_STATUS);
 		radio_writeRegister(NRF_STATUS,0x70);
 		GPIO_IntClear((1 << NRF_INT_PIN));
 		
 	}
 	
+}
+
+void radio_readRegisterCB(uint8_t *data, uint16_t size)
+{
+	readRegisterValue = data[1];
+	wait_callback = false;
 }
 
 void RADIO_Init()
@@ -113,11 +126,11 @@ void RADIO_Init()
 	uint8_t addr[6];
 	memset(addr,0xE7,6);
 	addr[0] = 0x00 | (NRF_W_REGISTER | NRF_TX_ADDR);
-	USART2_Transfer(addr,6,radio_cs);
+	USART2_Transfer(addr,6,radio_cs, NULL);
 
 	memset(addr,0xE7,6);
 	addr[0] = 0x00 | (NRF_W_REGISTER | NRF_RX_ADDR_P0);
-	USART2_Transfer(addr,6,radio_cs);
+	USART2_Transfer(addr,6,radio_cs, NULL);
 
 	radio_writeRegister(NRF_DYNPD, 0x00);
 	radio_writeRegister(NRF_FEATURE, 0x00);
@@ -147,12 +160,12 @@ void radio_cs(USART_ChipSelect set)
 void RADIO_SetMode(RADIO_Mode rm)
 {
 	
-	TRACE("%i: RADIO_SetMode(): set mode to: 0x%2.2X\n", TIMER_CounterGet(TIMER1), rm);
+	//TRACE("%i: RADIO_SetMode(): set mode to: 0x%2.2X\n", TIMER_CounterGet(TIMER1), rm);
 	
 	uint8_t cmd = NRF_FLUSH_RX;
-	USART2_Transfer(&cmd,1,radio_cs);
+	USART2_Transfer(&cmd,1,radio_cs, NULL);
 	cmd = NRF_FLUSH_TX;
-	USART2_Transfer(&cmd,1,radio_cs);
+	USART2_Transfer(&cmd,1,radio_cs, NULL);
 	
 	switch (rm)
 	{
@@ -172,7 +185,7 @@ void RADIO_SetMode(RADIO_Mode rm)
 void RADIO_Enable(RADIO_Mode rm)
 {
 
-	TRACE("%i: RADIO_Enable(): enable: 0x%2.2X\n", TIMER_CounterGet(TIMER1), rm);
+	//TRACE("%i: RADIO_Enable(): enable: 0x%2.2X\n", TIMER_CounterGet(TIMER1), rm);
 
 	switch (rm)
 	{
@@ -200,8 +213,10 @@ uint8_t radio_readRegister(uint8_t reg)
 	uint8_t transfer[2];
 	transfer[0] = (NRF_R_REGISTER | reg);
 	transfer[1] = NRF_NOP;
-	USART2_Transfer(transfer,2,radio_cs);
-	return transfer[1];
+	wait_callback = true;
+	USART2_Transfer(transfer,2,radio_cs, radio_readRegisterCB);
+	while(wait_callback);
+	return readRegisterValue;
 }
 
 void radio_writeRegister(uint8_t reg, uint8_t value)
@@ -209,7 +224,7 @@ void radio_writeRegister(uint8_t reg, uint8_t value)
 	uint8_t transfer[2];
 	transfer[0] = (NRF_W_REGISTER | reg);
 	transfer[1] = value;
-	USART2_Transfer(transfer,2,radio_cs);
+	USART2_Transfer(transfer,2,radio_cs, NULL);
 }
 
 bool RADIO_Send(uint8_t payload[32])
@@ -226,6 +241,14 @@ bool RADIO_Recv(uint8_t payload[32])
 	
 }
 
+void radio_storePacket(uint8_t *data, uint16_t size)
+{
+	
+	TRACE("%i: storePacket\n", TIMER_CounterGet(TIMER1));
+	QUEUE_Write(&rxBuffer, &data[1]);
+	
+}
+
 void RADIO_SetAutoRefil(bool _auto_refil)
 {
 	auto_refil = _auto_refil;
@@ -234,24 +257,38 @@ void RADIO_SetAutoRefil(bool _auto_refil)
 void RADIO_TxBufferFill()
 {
 	
-	uint8_t payload[33];
+	TRACE("%i: TX BUFFER FILL\n", TIMER_CounterGet(TIMER1));
 	
-	int i = 0;
-	while (i < 3 && (!(radio_readRegister(NRF_FIFO_STATUS) & 0x20)) && (QUEUE_Read(&txBuffer,&payload[1])))
+	if (radio_readRegister(NRF_FIFO_STATUS) & 0x10)
+		send_in_progress = false;
+	
+	uint8_t payload[33];
+	if ((radio_readRegister(NRF_FIFO_STATUS) & 0x10))
+	{
+		int i;
+		for (i = 0; i < 3; i++)
+		{
+			if (!QUEUE_Read(&txBuffer,&payload[1]))
+				break;
+			payload[0] = NRF_W_TX_PAYLOAD;
+			USART2_Transfer(payload,33,radio_cs, NULL);
+			
+			send_in_progress = true;
+		}
+		TRACE("%i: RADIO_TxBufferFill(): %i packets uploaded\n",TIMER_CounterGet(TIMER1), i);
+		packet_count += i;
+	}
+	else if ((!(radio_readRegister(NRF_FIFO_STATUS) & 0x20)) && (QUEUE_Read(&txBuffer,&payload[1])))
 	{
 		
 		payload[0] = NRF_W_TX_PAYLOAD;
-		USART2_Transfer(payload,33,radio_cs);
-		i++;
+		USART2_Transfer(payload,33,radio_cs, NULL);
 		
+		send_in_progress = true;
+		
+		TRACE("%i: RADIO_TxBufferFill(): 1 packet uploaded\n",TIMER_CounterGet(TIMER1));
+		packet_count++;
 	}
-	
-	TRACE("%i: RADIO_TxBufferFill(): %i packets uploaded\n",TIMER_CounterGet(TIMER1), i);
-	
-	if (radio_readRegister(NRF_FIFO_STATUS) & 0x10)
-				send_in_progress = false;
-			else
-				send_in_progress = true;
 	
 }
 
@@ -303,7 +340,7 @@ void RADIO_GetID()
 		
 		
 		// fake
-		node_id = 1;
+		node_id = 10;
 		
 		tdma_gp = 500;
 		tdma_txp = 1000;
@@ -569,7 +606,7 @@ void RADIO_HandleMessages()
 	
 	if (tdma_stage_flags & (1 << 0))
 	{
-		TRACE("%i: STAGE 1\n", TIMER_CounterGet(TIMER1));
+		TRACE("%i: STAGE 1 - RX EN\n", TIMER_CounterGet(TIMER1));
 		radio_config_cc(RADIO_TIMER, NRF_CE_TIMER_CC, node_id * tdma_sp, false);
 		
 		RADIO_Enable(RXAMP);
@@ -577,12 +614,12 @@ void RADIO_HandleMessages()
 	}
 	if (tdma_stage_flags & (1 << 1))
 	{
-		TRACE("%i: STAGE 2\n", TIMER_CounterGet(TIMER1));
+		TRACE("%i: STAGE 2 - CONF TX, FILL FIFO\n", TIMER_CounterGet(TIMER1));
 		radio_config_cc(RADIO_TIMER, NRF_CE_TIMER_CC, node_id * tdma_sp + tdma_gp, true);
 		
 		RADIO_Enable(OFF);
 		RADIO_SetMode(TX);
-		
+		packet_count = 0;
 		RADIO_TxBufferFill();
 		RADIO_SetAutoRefil(true);
 		tdma_stage_flags &= ~(1 << 1);
@@ -595,26 +632,27 @@ void RADIO_HandleMessages()
 	}
 	if (tdma_stage_flags & (1 << 3))
 	{
-		TRACE("%i: STAGE 4\n", TIMER_CounterGet(TIMER1));
+		TRACE("%i: STAGE 4 - AUTO REFIL = FALSE\n", TIMER_CounterGet(TIMER1));
 		tdma_stage_flags &= ~(1 << 3);
 	}
 	if (tdma_stage_flags & (1 << 4))
 	{
-		TRACE("%i: STAGE 5\n", TIMER_CounterGet(TIMER1));
+		TRACE("%i: STAGE 5 - CONF RX\n", TIMER_CounterGet(TIMER1));
 		radio_config_cc(RADIO_TIMER, NRF_CE_TIMER_CC, (node_id + 1) * tdma_sp, true);
+		TRACE("%i packets sent, last TX %i\n", packet_count, last_tx);
 		RADIO_SetMode(RX);
 		tdma_stage_flags &= ~(1 << 4);
 	}
 	if (tdma_stage_flags & (1 << 5))
 	{
-		TRACE("%i: STAGE 6\n", TIMER_CounterGet(TIMER1));
+		TRACE("%i: STAGE 6 - ENABLE RX\n", TIMER_CounterGet(TIMER1));
 		radio_config_cc(RADIO_TIMER, NRF_CE_TIMER_CC, tdma_p, false);
 		RADIO_Enable(RXAMP);
 		tdma_stage_flags &= ~(1 << 5);
 	}
 	if (tdma_stage_flags & (1 << 6))
 	{
-		TRACE("%i: STAGE 7\n", TIMER_CounterGet(TIMER1));
+		TRACE("%i: STAGE 7 - DISABLE\n", TIMER_CounterGet(TIMER1));
 		radio_config_cc(RADIO_TIMER, NRF_CE_TIMER_CC, 0, true);
 		RADIO_Enable(OFF);
 		RADIO_SetMode(OFF);
@@ -622,14 +660,13 @@ void RADIO_HandleMessages()
 	}
 	if (tdma_stage_flags & (1 << 7))
 	{
+		TRACE("%i: STAGE 8 - CONF RX\n", TIMER_CounterGet(TIMER1));
 		RADIO_SetMode(RX);
-		TRACE("%i: STAGE 8\n", TIMER_CounterGet(TIMER1));
 		tdma_stage_flags &= ~(1 << 7);
 	}
 	
 	if (radio_irq_flags)
 	{
-		TRACE("%i: HANDLE RADIO IRQ\n", TIMER_CounterGet(TIMER1));
 		
 		uint8_t status = radio_irq_flags;
 		radio_irq_flags = 0;
@@ -646,25 +683,38 @@ void RADIO_HandleMessages()
 			NRF_CE_lo;
 			
 			TRACE("%i: radio_interrupt_rt() : TX\n", TIMER_CounterGet(TIMER1));
+			last_tx = TIMER_CounterGet(TIMER1);
+			
+			if (radio_readRegister(NRF_FIFO_STATUS) & 0x10)
+				send_in_progress = false;
 			
 			uint8_t payload[33];
-			int i = 0;
-			while (i < 3 && auto_refil && (!(radio_readRegister(NRF_FIFO_STATUS) & 0x20)) && (QUEUE_Read(&txBuffer,&payload[1])))
+			if (auto_refil && (radio_readRegister(NRF_FIFO_STATUS) & 0x10))
+			{
+				int i;
+				for (i = 0; i < 3; i++)
+				{
+					if (!QUEUE_Read(&txBuffer,&payload[1]))
+						break;
+					payload[0] = NRF_W_TX_PAYLOAD;
+					USART2_Transfer(payload,33,radio_cs, NULL);
+					
+					send_in_progress = true;
+				}
+				TRACE("%i: RADIO_TxBufferFill(): %i packets uploaded\n",TIMER_CounterGet(TIMER1), i);
+				packet_count += i;
+			}
+			else if (auto_refil && (!(radio_readRegister(NRF_FIFO_STATUS) & 0x20)) && (QUEUE_Read(&txBuffer,&payload[1])))
 			{
 				
 				payload[0] = NRF_W_TX_PAYLOAD;
-				USART2_Transfer(payload,33,radio_cs);
-				i++;
+				USART2_Transfer(payload,33,radio_cs, NULL);
 				
-			}
-			
-			TRACE("%i: RADIO_TxBufferFill(): %i packets uploaded\n",TIMER_CounterGet(TIMER1), i);
-			
-			// if no packets left, send in progress false
-			if (radio_readRegister(NRF_FIFO_STATUS) & 0x10)
-				send_in_progress = false;
-			else
 				send_in_progress = true;
+				
+				TRACE("%i: RADIO_TxBufferFill(): 1 packet uploaded\n",TIMER_CounterGet(TIMER1));
+				packet_count++;
+			}
 			
 			NRF_CE_hi;
 			
@@ -676,14 +726,17 @@ void RADIO_HandleMessages()
 			
 			TRACE("%i: radio_interrupt_rt() : RX\n", TIMER_CounterGet(TIMER1));
 			uint8_t payload[33];
-			
-			while (!(radio_readRegister(NRF_FIFO_STATUS) & 0x01))
+			if (radio_readRegister(NRF_FIFO_STATUS) & 0x02)
+			{
+				for (int i = 0; i < 3; i++)
+				{
+					payload[0] = NRF_R_RX_PAYLOAD;
+					USART2_Transfer(payload,33,radio_cs,radio_storePacket);
+				}
+			} else if (!(radio_readRegister(NRF_FIFO_STATUS) & 0x01))
 			{
 				payload[0] = NRF_R_RX_PAYLOAD;
-				USART2_Transfer(payload,33,radio_cs);
-				
-				QUEUE_Write(&rxBuffer, &payload[1]);
-				
+				USART2_Transfer(payload,33,radio_cs,radio_storePacket);
 			}
 			
 		}
@@ -692,9 +745,9 @@ void RADIO_HandleMessages()
 	
 	static int i;
 	
-	if (i++ % 1000 == 0)
+	if (i++ % 1 == 0)
 	{
-		uint32_t p[32];
+		uint8_t p[32];
 		RADIO_Send(p);
 	}
 	

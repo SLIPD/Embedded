@@ -53,7 +53,7 @@
 #define SCHEDULE_TIMER_IRQ TIMER_IF_CC0
 
 
-#define RADIO_BUFFER_SIZE 		16
+#define RADIO_BUFFER_SIZE 		32
 
 typedef enum 
 {
