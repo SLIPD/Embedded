@@ -76,5 +76,6 @@ bool RADIO_Sending();
 void RADIO_Init();
 void RADIO_GetID();
 void RADIO_EnableTDMA();
+void RADIO_HandleMessages();
 
 #endif

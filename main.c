@@ -1,3 +1,5 @@
+//#define PPS_MASTER
+
 #include "efm32.h"
 
 #include "efm32_chip.h"
@@ -36,6 +38,17 @@ int main()
 	// init LEDs
 	LED_Init();
 	
+	#ifdef PPS_MASTER
+	
+	while(1)
+	{
+		
+		
+		
+	}
+	
+	#endif
+	
 	// init irqs
 	enableInterrupts();
 	
@@ -71,6 +84,7 @@ int main()
 	{
 		
 		// handle radio msgs
+		RADIO_HandleMessages();
 		
 		// display update
 		
@@ -157,10 +171,10 @@ void basestation_main()
 	int i;
 	for (i = 0; i < 500000; i++);
 	
+	UART1->TXDATA = '*';
+	
 	// wait for GPS fix
 	
-	
-	UART1->TXDATA = '*';
 	
 	// send GPS fix packet to pi
 	
