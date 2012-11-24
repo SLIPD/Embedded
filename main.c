@@ -20,7 +20,8 @@
 #include "gps.h"
 
 // Global variables
-DISPLAY_Message displayMessage;
+DISPLAY_Message displayMessageTop;
+DISPLAY_Message displayMessageBottom;
 char t_str [32]; // top line
 char b_str [32]; // bottom line
 
@@ -47,19 +48,6 @@ int main()
         TRACE_Init();
         TRACE("Trace started!\n");
         
-        // init display
-        DISPLAY_Init();
-        DISPLAY_InitMessage(&displayMessage);
-        
-
-	displayMessage.topLine=true;
-//        displayMessage.message=("123456789");
-        displayMessage.message=("willdalegerald");
-        DISPLAY_SetMessage(&displayMessage);         
-        displayMessage.topLine=false;
-        displayMessage.message=("1ABCDEFGH");
-        DISPLAY_SetMessage(&displayMessage); 
-        
 	// init LEDs
 	LED_Init();
 
@@ -69,7 +57,19 @@ int main()
 	// GPS Init
 	
 	// Display init
-	
+        DISPLAY_Init();
+        DISPLAY_InitMessage(&displayMessageTop);
+        DISPLAY_InitMessage(&displayMessageBottom);
+        
+        displayMessageTop.scroll = false;
+        displayMessageTop.message=("i_am_the_top");
+        DISPLAY_SetMessage(&displayMessageTop);  
+        
+        displayMessageBottom.scroll = false;
+        displayMessageBottom.topLine=false;
+        displayMessageBottom.message=("1..2..3..4..5....");
+        DISPLAY_SetMessage(&displayMessageBottom); 
+        
 	// display getting fix message
 	
 	// radio init
@@ -82,15 +82,13 @@ int main()
 	
 	while(1)
 	{
-		
-		// handle radio msgs
-		
+                // handle radio msgs
+
 		// display update
-                DISPLAY_Update();    
+
 		// gps update
-		
+
 		// sleep until irq
-		
 	}
 	
 }
