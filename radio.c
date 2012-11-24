@@ -345,12 +345,12 @@ void RADIO_GetID()
 		
 		
 		// fake
-		node_id = 11;
+		node_id = 2;
 		
 		tdma_gp = 500;
-		tdma_txp = 1000;
+		tdma_txp = 3000;
 		tdma_txp_p = 300;
-		tdma_nc = 16;
+		tdma_nc = 8;
 		tdma_c = 40;
 		
 		tdma_sp = 2*tdma_gp + tdma_txp;
@@ -786,11 +786,11 @@ void RADIO_HandleMessages()
 					payload[0] = NRF_R_RX_PAYLOAD;
 					USART2_Transfer(payload,33,radio_cs,radio_storePacket);
 				}
-			} /*else if (!(fifo_status & 0x01))
+			} else if (!(fifo_status & 0x01))
 			{
 				payload[0] = NRF_R_RX_PAYLOAD;
 				USART2_Transfer(payload,33,radio_cs,radio_storePacket);
-			}*/
+			}
 			
 		}
 		
@@ -799,6 +799,11 @@ void RADIO_HandleMessages()
 	static int i;
 	
 	uint8_t p[32];
+	memset(p,node_id,32);
 	RADIO_Send(p);
+	
+	if (RADIO_Recv(p))
+		if (p[0] != 3)
+			TRACE("NOT EQUAL\n");
 	
 }

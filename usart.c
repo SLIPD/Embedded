@@ -53,7 +53,7 @@ void USART_Init(USART_TypeDef *usart, uint8_t usart_idx, uint8_t location)
 	
 	usartInit.msbf = true;
 	usartInit.clockMode = usartClockMode0;
-	usartInit.baudrate = 1000000;
+	usartInit.baudrate = 5000000;
 	USART_InitSync(usart, &usartInit);
 	usart->ROUTE = (usart->ROUTE & ~_USART_ROUTE_LOCATION_MASK) | usart_location;
 	usart->ROUTE |= USART_ROUTE_TXPEN | USART_ROUTE_RXPEN | USART_ROUTE_CLKPEN;
