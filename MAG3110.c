@@ -110,9 +110,9 @@ void MAGRegReadN(uint8_t reg1, uint8_t n, uint8_t *array)
 void MAGStandby(void) 
 {
     uint8_t r;
-    r = MAGRegRead(CTRL_REG1);
+    r = MAGRegRead(MAG_CTRL_REG1);
      // Bit 0 of CTRL_REG1, 0 is standby
-    MAGRegWrite(CTRL_REG1, r & ~ACTIVE_MASK);
+    MAGRegWrite(MAG_CTRL_REG1, r & ~MAG_ACTIVE_MASK);
 }
 
 /**
@@ -123,9 +123,9 @@ void MAGStandby(void)
 void MAGActive(void) 
 {
     uint8_t r;
-    r = MAGRegRead(CTRL_REG1);
+    r = MAGRegRead(MAG_CTRL_REG1);
      // Bit 0 of CTRL_REG1, 1 is active
-    MAGRegWrite(CTRL_REG1, r | ACTIVE_MASK);
+    MAGRegWrite(MAG_CTRL_REG1, r | MAG_ACTIVE_MASK);
 }
 
 void MAGInit(void) 
@@ -134,20 +134,24 @@ void MAGInit(void)
     // MAGRegWrite(0x2E, INT_EN_DRDY_MASK); //Set the interrupt to route to INT1
     // MAGRegWrite(0x2E, INT_EN_DRDY_MASK); //Set the interrupt to route to INT1
     
-    MAGRegWrite(OFF_X_MSB, 0x00);
-    MAGRegWrite(OFF_X_LSB, 0x00);
-    MAGRegWrite(OFF_Y_MSB, 0x00);
-    MAGRegWrite(OFF_Y_LSB, 0x00);
-    MAGRegWrite(OFF_Z_MSB, 0x00);
-    MAGRegWrite(OFF_Z_LSB, 0x00);
+    // Reset offset regs
+    MAGRegWrite(MAG_OFF_X_MSB, 0x00);
+    MAGRegWrite(MAG_OFF_X_LSB, 0x00);
+    MAGRegWrite(MAG_OFF_Y_MSB, 0x00);
+    MAGRegWrite(MAG_OFF_Y_LSB, 0x00);
+    MAGRegWrite(MAG_OFF_Z_MSB, 0x00);
+    MAGRegWrite(MAG_OFF_Z_LSB, 0x00);
     
-    MAGRegWrite(CTRL_REG2, (MAGRegRead(CTRL_REG2) | AUTO_MRST_MASK )); // Activate automatic magnetic sensor resets
-    MAGRegWrite(CTRL_REG2, (MAGRegRead(CTRL_REG2) | RAW_MASK )); // Activate raw mode
-    MAGRegWrite(CTRL_REG1, (MAGRegRead(CTRL_REG1) & ~ODR_MASK)); // Active ODR, 80Hz
-    MAGRegWrite(CTRL_REG1, (MAGRegRead(CTRL_REG1) & ~OS_MASK)); // Active OS, 1
-    MAGRegWrite(CTRL_REG1, (MAGRegRead(CTRL_REG1) & ~FR_MASK)); // Deactivate Fast Read
-    MAGRegWrite(CTRL_REG1, (MAGRegRead(CTRL_REG1) & ~TM_MASK)); // Deactivate Trigger Measurement
-    MAGRegWrite(CTRL_REG1, (MAGRegRead(CTRL_REG1) & ~ACTIVE_MASK) | 0x01); // Active Mode
+    // CTRL_REG2
+    MAGRegWrite(MAG_CTRL_REG2, (MAGRegRead(MAG_CTRL_REG2) | MAG_AUTO_MRST_MASK )); // Activate automatic magnetic sensor resets
+    MAGRegWrite(MAG_CTRL_REG2, (MAGRegRead(MAG_CTRL_REG2) | MAG_RAW_MASK )); // Activate raw mode
+    
+    // CTRL_REG1
+    MAGRegWrite(MAG_CTRL_REG1, (MAGRegRead(MAG_CTRL_REG1) & ~MAG_ODR_MASK)); // Active ODR, 80Hz
+    MAGRegWrite(MAG_CTRL_REG1, (MAGRegRead(MAG_CTRL_REG1) & ~MAG_OS_MASK)); // Active OS, 1
+    MAGRegWrite(MAG_CTRL_REG1, (MAGRegRead(MAG_CTRL_REG1) & ~MAG_FR_MASK)); // Deactivate Fast Read
+    MAGRegWrite(MAG_CTRL_REG1, (MAGRegRead(MAG_CTRL_REG1) & ~MAG_TM_MASK)); // Deactivate Trigger Measurement
+    
     MAGActive();  
 }              
 

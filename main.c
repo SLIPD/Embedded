@@ -16,14 +16,18 @@
 
 #include "i2cdrv.h"
 #include "display.h"
+#include "MAG3110.h"
+#include "MMA845XQ.h"
 
 #include "gps.h"
 
 // Global variables
-DISPLAY_Message displayMessageTop;
-DISPLAY_Message displayMessageBottom;
-char t_str [32]; // top line
-char b_str [32]; // bottom line
+DISPLAY_Message         displayMessageTop;
+DISPLAY_Message         displayMessageBottom;
+Mag_Vector_Type         magReading;
+Accel_Vector_Type       accelReading;
+uint8_t buf[6];
+char str[32];
 
 // Prototypes
 void initClocks();
@@ -62,16 +66,34 @@ int main()
         DISPLAY_InitMessage(&displayMessageBottom);
         
         displayMessageTop.scroll = false;
-        displayMessageTop.message=("i_am_the_top");
-        DISPLAY_SetMessage(&displayMessageTop);  
+        displayMessageTop.message=("  ^   ___   ^   ");
+        DISPLAY_SetMessage(&displayMessageTop); 
         
+        displayMessageBottom.topLine = false;
         displayMessageBottom.scroll = false;
-        displayMessageBottom.topLine=false;
-        displayMessageBottom.message=("1..2..3..4..5....");
-        DISPLAY_SetMessage(&displayMessageBottom); 
+        displayMessageBottom.message=("      __/      ");
+        DISPLAY_SetMessage(&displayMessageBottom);  
         
 	// display getting fix message
-	
+        
+        // magnetometer init
+        MAGInit(); 
+        MAGRegReadN(MAG_OUT_X_MSB_REG, 6, buf); // Read MSB of X 
+        magReading.x = buf[0]<<8 | buf[1];
+        magReading.y = buf[2]<<8 | buf[3];
+        magReading.z = buf[4]<<8 | buf[5];
+        
+        uint8_t a = MAGRegRead(MAG_SYSMOD);
+        sprintf(str, "SYSMOD = 0x%2.2x, %d\n", a);
+        TRACE(str);
+
+        // accelerometer init
+        MMAInit();
+        MMARegReadN(OUT_X_MSB_REG, 6, buf); // Read MSB of X 
+        accelReading.x = ((int16_t) (buf[0]<<8 | buf[1])) >> 0x2;
+        accelReading.y = ((int16_t) (buf[2]<<8 | buf[3])) >> 0x2;
+        accelReading.z = ((int16_t) (buf[4]<<8 | buf[5])) >> 0x2;
+        
 	// radio init
 	
 	// radio get id
@@ -83,12 +105,23 @@ int main()
 	while(1)
 	{
                 // handle radio msgs
-
+                
 		// display update
-
+                DISPLAY_Update();
 		// gps update
-
+                // If there is new ZYX data available, read
+                if(MAGRegRead(MAG_DR_STATUS_REG) & MAG_ZYXDR_MASK)
+                {
+                    MAGRegReadN(MAG_OUT_X_MSB_REG, 6, buf);
+                    magReading.x = buf[0]<<8 | buf[1];
+                    magReading.y = buf[2]<<8 | buf[3];
+                    magReading.z = buf[4]<<8 | buf[5];
+                    
+                    sprintf(str, "x %d, y %d, z %d\n", magReading.x, magReading.y, magReading.z);
+                    TRACE(str);
+                }
 		// sleep until irq
+                for(int i = 0; i < 1000000; i++);
 	}
 	
 }

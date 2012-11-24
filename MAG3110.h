@@ -36,7 +36,7 @@ extern "C" {
      * Bit 1 - YDR
      * Bit 0 - XDR
      */
-#define DR_STATUS_REG         0x00      // Data Ready Status Reg
+#define MAG_DR_STATUS_REG         0x00      // Data Ready Status Reg
 
     /*
      * Data Overwrites Before Data Set Read Complete
@@ -47,18 +47,18 @@ extern "C" {
      * at least one data register has been overwritten. Cleared when high byte of 
      * data registers of all active channels are read.
      */
-#define ZYXOW_MASK            0x80      // Bit 7, ZYX axis overwrite
-#define ZOW_MASK              0x40      // Bit 6, Z axis overwrite
-#define YOR_MASK              0x20      // Bit 5, Y axis overwrite
-#define XOR_MASK              0x10      // Bit 4, X axis overwrite
+#define MAG_ZYXOW_MASK            0x80      // Bit 7, ZYX axis overwrite
+#define MAG_ZOW_MASK              0x40      // Bit 6, Z axis overwrite
+#define MAG_YOR_MASK              0x20      // Bit 5, Y axis overwrite
+#define MAG_XOR_MASK              0x10      // Bit 4, X axis overwrite
     
     /*
      * New Data Available
      */
-#define ZYXDR_MASK            0x08      // Bit 3, new set of data ready 
-#define ZDR_MASK              0x04      // Bit 2, Z axis data ready
-#define YDR_MASK              0x02      // Bit 1, Y axis data ready
-#define XDR_MASK              0x01      // Bit 0, X axis data ready
+#define MAG_ZYXDR_MASK            0x08      // Bit 3, new set of data ready 
+#define MAG_ZDR_MASK              0x04      // Bit 2, Z axis data ready
+#define MAG_YDR_MASK              0x02      // Bit 1, Y axis data ready
+#define MAG_XDR_MASK              0x01      // Bit 0, X axis data ready
     
     /*
      * XYZ Data Registers
@@ -76,12 +76,12 @@ extern "C" {
      * registers OUT_X_LSB through OUT_Z_LSB are updated.
      * 
      */
-#define OUT_X_MSB_REG         0x01      // [15:8] of X measurement
-#define OUT_X_LSB_REG         0x02      // [7:0] of X measurement
-#define OUT_Y_MSB_REG         0x03      // [15:8] of Y measurement
-#define OUT_Y_LSB_REG         0x04      // [7:0] of Y measurement       
-#define OUT_Z_MSB_REG         0x05      // [15:8] of Z measurement
-#define OUT_Z_LSB_REG         0x06      // [7:0] of Z measurement
+#define MAG_OUT_X_MSB_REG         0x01      // [15:8] of X measurement
+#define MAG_OUT_X_LSB_REG         0x02      // [7:0] of X measurement
+#define MAG_OUT_Y_MSB_REG         0x03      // [15:8] of Y measurement
+#define MAG_OUT_Y_LSB_REG         0x04      // [7:0] of Y measurement       
+#define MAG_OUT_Z_MSB_REG         0x05      // [15:8] of Z measurement
+#define MAG_OUT_Z_LSB_REG         0x06      // [7:0] of Z measurement
 
     /*
      * MAG3110 Unit
@@ -96,19 +96,19 @@ extern "C" {
      *          is taking place. The part defaults to Standby mode upon 
      *          power-up (AC = TM = 0).
      */
-#define WHO_AM_I              0x07      // DEVICE ID NUMBER, 0xC4
-#define SYSMOD                0x08      // Current System / Operating Mod
-#define DIE_TEMP              0x0F      // Temperature, signed 8 bits in degrees
+#define MAG_WHO_AM_I              0x07      // DEVICE ID NUMBER, 0xC4
+#define MAG_SYSMOD                0x08      // Current System / Operating Mod
+#define MAG_DIE_TEMP              0x0F      // Temperature, signed 8 bits in degrees
 
     /*
      * User offset 
      */
-#define OFF_X_MSB             0x09      // [14:7] of user X offset 
-#define OFF_X_LSB             0x0A      // [6:0] of user X offset, bit 0 not used
-#define OFF_Y_MSB             0x0B      // [14:7] of user Y offset 
-#define OFF_Y_LSB             0x0C      // [6:0] of user Y offset, bit 0 not used
-#define OFF_Z_MSB             0x0D      // [14:7] of user Z offset 
-#define OFF_Z_LSB             0x0E      // [6:0] of user Z offset, bit 0 not used
+#define MAG_OFF_X_MSB             0x09      // [14:7] of user X offset 
+#define MAG_OFF_X_LSB             0x0A      // [6:0] of user X offset, bit 0 not used
+#define MAG_OFF_Y_MSB             0x0B      // [14:7] of user Y offset 
+#define MAG_OFF_Y_LSB             0x0C      // [6:0] of user Y offset, bit 0 not used
+#define MAG_OFF_Z_MSB             0x0D      // [14:7] of user Z offset 
+#define MAG_OFF_Z_LSB             0x0E      // [6:0] of user Z offset, bit 0 not used
     
     /*
      * CTRL Registers
@@ -132,24 +132,24 @@ extern "C" {
      *  the init routines before taking measurements.
      * 
      */
-#define CTRL_REG1             0x10     
-#define CTRL_REG2             0x11   
+#define MAG_CTRL_REG1             0x10     
+#define MAG_CTRL_REG2             0x11   
     
-#define ODR2_MASK             0x80
-#define ODR1_MASK             0x40
-#define ODR0_MASK             0x20
-#define OS1_MASK              0x10
-#define OS0_MASK              0x08
-#define FR_MASK               0x04
-#define TM_MASK               0x02
-#define ACTIVE_MASK           0x01
+#define MAG_ODR2_MASK             0x80
+#define MAG_ODR1_MASK             0x40
+#define MAG_ODR0_MASK             0x20
+#define MAG_OS1_MASK              0x10
+#define MAG_OS0_MASK              0x08
+#define MAG_FR_MASK               0x04
+#define MAG_TM_MASK               0x02
+#define MAG_ACTIVE_MASK           0x01
     
-#define ODR_MASK              0xE0
-#define OS_MASK               0x18
+#define MAG_ODR_MASK              0xE0
+#define MAG_OS_MASK               0x18
     
-#define AUTO_MRST_MASK        0x80
-#define RAW_MASK              0x20
-#define MAG_RST_MASK          0x10
+#define MAG_AUTO_MRST_MASK        0x80
+#define MAG_RAW_MASK              0x20
+#define MAG_RST_MASK              0x10
     
     /**
      * Data Rate Values (ODR)
