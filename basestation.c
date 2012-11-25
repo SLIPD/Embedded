@@ -77,10 +77,6 @@ void basestation_main()
 		basestation_echo();
 	}
 	
-	/*
-	
-	*/
-	
 	RADIO_Enable(OFF);
 	RADIO_SetMode(RX);
 	RADIO_Enable(RX);
@@ -108,7 +104,7 @@ void basestation_main()
 		else
 		{
 			
-			if (tx)
+			if (tx && !RADIO_Sending())
 			{
 				RADIO_Enable(OFF);
 				RADIO_SetMode(RX);

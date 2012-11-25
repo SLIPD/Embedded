@@ -168,7 +168,7 @@ void radio_cs(USART_ChipSelect set)
 void RADIO_SetMode(RADIO_Mode rm)
 {
 	
-	TRACE("%i: RADIO_SetMode(): set mode to: 0x%2.2X\n", TIMER_CounterGet(TIMER1), rm);
+	//TRACE("%i: RADIO_SetMode(): set mode to: 0x%2.2X\n", TIMER_CounterGet(TIMER1), rm);
 	
 	uint8_t cmd = NRF_FLUSH_RX;
 	USART2_Transfer(&cmd,1,radio_cs, NULL);
@@ -188,12 +188,13 @@ void RADIO_SetMode(RADIO_Mode rm)
 			radio_writeRegister(NRF_CONFIG, 0x0F); LED_Off(GREEN);LED_On(BLUE);
 			break;
 	}
+	
 }
 
 void RADIO_Enable(RADIO_Mode rm)
 {
 
-	TRACE("%i: RADIO_Enable(): enable: 0x%2.2X\n", TIMER_CounterGet(TIMER1), rm);
+	//TRACE("%i: RADIO_Enable(): enable: 0x%2.2X\n", TIMER_CounterGet(TIMER1), rm);
 
 	switch (rm)
 	{
