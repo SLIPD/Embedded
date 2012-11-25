@@ -141,18 +141,30 @@ int main()
         
         // eCompass init
 //        eCompassInit();
-        
+  
 	// radio init
 	RADIO_Init();
 	
 	// radio get id
-	RADIO_GetID();
+	//RADIO_GetID();
 	
 	// wait for gps initial fix
 	GPS_GetFix();
 	
+	TRACE(":FIX FOUND\n");
+	
 	// enable tdma
 	RADIO_EnableTDMA();
+	
+	LED_On(RED);
+	LED_On(GREEN);
+	LED_On(BLUE);
+	
+	while (1)
+	{
+		TRACE(":TDMA STARTED\n");
+		for (int i = 0; i < 1000000; i++);
+	}
 	
 	while(1)
 	{
@@ -179,8 +191,10 @@ void enableInterrupts()
 	
 	NVIC_EnableIRQ(TIMER0_IRQn);
 	NVIC_EnableIRQ(TIMER1_IRQn);
+	NVIC_EnableIRQ(TIMER3_IRQn);
 	NVIC_SetPriority(TIMER0_IRQn, 4);
 	NVIC_SetPriority(TIMER1_IRQn, 4);
+	NVIC_SetPriority(TIMER3_IRQn, 4);
 
 	NVIC_EnableIRQ(USART2_TX_IRQn);
 	NVIC_EnableIRQ(USART2_RX_IRQn);
@@ -239,6 +253,7 @@ void initClocks()
 	// enable timers
 	CMU_ClockEnable(cmuClock_TIMER0, true);
 	CMU_ClockEnable(cmuClock_TIMER1, true);
+	CMU_ClockEnable(cmuClock_TIMER3, true);
 	
 	// i2c
 	CMU_ClockEnable(cmuClock_I2C0, true);

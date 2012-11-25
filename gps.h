@@ -29,5 +29,6 @@ void GPS_Init();
 void GPS_Read(GPS_Vector_Type *vector);
 void GPS_GetFix();
 void switchMode();
+void GPS_GetPrecision(uint8_t target_precision);
 
 #endif  /* __GPS_H__ */

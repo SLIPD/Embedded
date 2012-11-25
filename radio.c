@@ -100,6 +100,14 @@ void radio_readRegisterCB(uint8_t *data, uint16_t size)
 void RADIO_Init()
 {
 	
+	tdma_gp = 500;
+	tdma_txp = 3000;
+	tdma_txp_p = 100;
+	tdma_sp = 2*tdma_gp + tdma_txp;
+	tdma_nc = 8;
+	tdma_p = tdma_sp * tdma_nc;
+	tdma_c = 102;
+	
 	TIMER_Reset(RADIO_TIMER); 
 	TIMER_Reset(PPS_TIMER);
 	
@@ -516,7 +524,12 @@ void RADIO_EnableTDMA()
 	TIMER_IntEnable(PPS_TIMER, PPS_TIMER_IRQ);
 	TIMER_InitCC(PPS_TIMER, PPS_TIMER_CC, &timerCCInitCapture);
 	
-	while (!syncd);
+	int i;
+	while (!syncd)
+	{
+		if (i++ % 1000000 == 0)
+			TRACE(":WAITING FOR SYNC\n");
+	}
 	
 	TRACE("Syncd\n");
 	TRACE("Switching to channel %i\n", tdma_c);

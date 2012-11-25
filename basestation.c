@@ -6,6 +6,9 @@
 #include "radio.h"
 #include "gps.h"
 
+/* variables */
+bool pre_tdma = true;
+
 /* prototypes */
 bool basestation_handlePacket(Packet *p);
 void basestation_echo();
@@ -51,6 +54,9 @@ void basestation_main()
 		// wait for GPS fix
 		GPS_GetFix();
 		
+		// wait for precise fix
+		GPS_GetPrecision(30);
+		
 		GPS_Vector_Type gpsv;
 		GPS_Read(&gpsv);
 		
@@ -86,32 +92,35 @@ void basestation_main()
 		
 		RADIO_HandleMessages();
 		
-		if (RADIO_TxBufferSize())
+		if (pre_tdma)
 		{
-			
-			if (!tx)
+			if (RADIO_TxBufferSize())
 			{
-			
-				RADIO_Enable(OFF);
-				RADIO_SetMode(TX);
-				RADIO_TxBufferFill();
-				RADIO_Enable(TX);
-				tx = true;
+				
+				if (!tx)
+				{
+				
+					RADIO_Enable(OFF);
+					RADIO_SetMode(TX);
+					RADIO_TxBufferFill();
+					RADIO_Enable(TX);
+					tx = true;
+					
+				}
 				
 			}
-			
-		}
-		else
-		{
-			
-			if (tx && !RADIO_Sending())
+			else
 			{
-				RADIO_Enable(OFF);
-				RADIO_SetMode(RX);
-				RADIO_Enable(RX);
-				tx = false;
+				
+				if (tx && !RADIO_Sending())
+				{
+					RADIO_Enable(OFF);
+					RADIO_SetMode(RX);
+					RADIO_Enable(RX);
+					tx = false;
+				}
+				
 			}
-			
 		}
 		
 		if (UART1->STATUS & UART_STATUS_RXDATAV)
@@ -185,7 +194,14 @@ bool basestation_handlePacket(Packet *p)
 		p->destinationId == 0x00)
 	{
 		
-		
+		switch (p->msgType)
+		{
+		case 0x00:
+			RADIO_ConfigTDMA(*p);
+			pre_tdma = false;
+			RADIO_EnableTDMA();
+			break;
+		}
 		
 		return true;
 	}
