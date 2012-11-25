@@ -57,7 +57,7 @@ LDFLAGS += -Xlinker -Map=$(LST_DIR)/$(PROJECTNAME).map -mcpu=cortex-m3 -mthumb \
 -L"$(TOOLDIR)/lib/gcc/arm-none-eabi/$(GCCVERSION)/thumb2" \
 -Wl,--gc-sections -Wl,--no-wchar-size-warning
 
-LIBS += -lc -lcs3 -lcs3unhosted
+LIBS += -lc -lcs3 -lcs3unhosted -lm
 
 INCLUDEPATHS += \
 -I.. \
@@ -83,6 +83,7 @@ efm32lib/src/efm32_i2c.c \
 efm32lib/src/efm32_dma.c \
 efm32lib/src/efm32_timer.c \
 efm32lib/src/efm32_letimer.c \
+efm32lib/src/efm32_leuart.c \
 efm32lib/src/efm32_int.c \
 efm32lib/src/efm32_emu.c \
 efm32lib/src/efm32_adc.c \
@@ -95,7 +96,12 @@ display.c \
 MAG3110.c \
 MMA845.c \
 eCompass.c \
-gps.c 
+gps.c \
+queue.c \
+radio.c \
+usart.c \
+time_schedule.c \
+basestation.c
 
 S_SRC +=  \
 CMSIS/CM3/DeviceSupport/EnergyMicro/EFM32/startup/cs3/startup_efm32gg.s

@@ -7,17 +7,27 @@ typedef struct
 {
 	
 	uint32_t id0;
-	uint32_t id1 __attribute__ ((packed));
-	uint8_t nodeInfo;
+	uint32_t id1;
+	uint32_t tdma_gp;
+	uint32_t tdma_txp;
+	uint32_t tdma_txp_p;
+	uint8_t nodeId;
+	uint8_t nc;
+	uint8_t c;
 	
 } MessageType_Identification;
 
 typedef struct
 {
 	
-	uint32_t latitude;
-	uint32_t longitude;
-	uint32_t elevation;
+	struct
+	{
+		int32_t latitude;
+		int32_t longitude;
+		int16_t elevation;
+		uint16_t hexaseconds;
+	} positions[2];
+	
 	uint16_t last_seq_num;
 	
 } MessageType_NodePosition;

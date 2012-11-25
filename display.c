@@ -33,14 +33,6 @@ line2 =
 bool displayUpdateRequired = false;
 
 /* functions */
-void TIMER0_IRQHandler()
-{
-	// update screen
-	displayUpdateRequired = true;
-	DISPLAY_Update();
-
-	TIMER_IntClear(TIMER0, TIMER_IF_OF);
-}
 
 // Draw directions on top line of screen
 // dir: 0 hard left
@@ -57,8 +49,7 @@ void DISPLAY_dir(uint8_t dir)
     DISPLAY_sendPayload(0x40,(uint8_t*)blank,16);
     
     // Initialise and zero str
-    char* str;
-    memset(str,0,16);
+    char *str;
     
     // Set direction 
     switch(dir)
@@ -286,35 +277,9 @@ void DISPLAY_Init()
 	DISPLAY_sendByte(0x00,0x6F);
 	DISPLAY_sendByte(0x00,0x0C);
 	DISPLAY_sendByte(0x00,0x01);
-
-	// init timer
-	TIMER_Init_TypeDef timerInit =
-	{
-		.enable     = true, 
-		.debugRun   = true, 
-		.prescale   = timerPrescale512, 
-		.clkSel     = timerClkSelHFPerClk, 
-		.fallAction = timerInputActionNone, 
-		.riseAction = timerInputActionNone, 
-		.mode       = timerModeUp, 
-		.dmaClrAct  = false,
-		.quadModeX4 = false, 
-		.oneShot    = false, 
-		.sync       = false, 
-	};
-
-	/* Enable overflow interrupt */
-	TIMER_IntEnable(TIMER0, TIMER_IF_OF);
-
-	/* Set TIMER Top value */
-	// TIMER_TopSet(TIMER0, CMU_ClockFreqGet(cmuClock_TIMER0));
-	TIMER_TopSet(TIMER0, 0xAAAA);
-
-	/* Configure TIMER */
-	TIMER_Init(TIMER0, &timerInit);
-        
-        DISPLAY_clearScreen();
-        DISPLAY_returnHome();
+	
+	DISPLAY_clearScreen();
+	DISPLAY_returnHome();
 
 }
 
