@@ -13,7 +13,7 @@
 #include "usart.h"
 #include "nRF24L01.h"
 #include "led.h"
-#include "trace.h"
+#include "TRACE.h"
 #include "queue.h"
 #include "time_schedule.h"
 #include "config.h"
@@ -417,16 +417,7 @@ void RADIO_GetID()
 			{
 				
 				// store tdma details
-				node_id = incoming.payload.identification.nodeId;
-				
-				tdma_gp = incoming.payload.identification.tdma_gp;
-				tdma_txp = incoming.payload.identification.tdma_txp;
-				tdma_txp_p = incoming.payload.identification.tdma_txp_p;
-				tdma_nc = incoming.payload.identification.nc;
-				tdma_c = incoming.payload.identification.c;
-				
-				tdma_sp = 2*tdma_gp + tdma_txp;
-				tdma_p = tdma_sp * tdma_nc;
+				RADIO_ConfigTDMA(incoming);
 				
 				identified = true;
 				
@@ -450,7 +441,7 @@ void RADIO_GetID()
 	TRACE("IDENTIFIED NODE ID:%i\n", node_id);
 	
 	TRACE("TDMA CONFIG\n");
-				TRACE("GP: %i\nTXP: %i\nTXP_P: %i\nNC: %i\nC: \nSP: %i\nP: %i\n",
+				TRACE("GP: %i\nTXP: %i\nTXP_P: %i\nNC: %i\nC: %i\nSP: %i\nP: %i\n",
 					tdma_gp,
 					tdma_txp,
 					tdma_txp_p,
@@ -458,6 +449,22 @@ void RADIO_GetID()
 					tdma_c,
 					tdma_sp,
 					tdma_p);
+	
+}
+
+void RADIO_ConfigTDMA(Packet p)
+{
+	
+	node_id = p.payload.identification.nodeId;
+	
+	tdma_gp = p.payload.identification.tdma_gp;
+	tdma_txp = p.payload.identification.tdma_txp;
+	tdma_txp_p = p.payload.identification.tdma_txp_p;
+	tdma_nc = p.payload.identification.nc;
+	tdma_c = p.payload.identification.c;
+	
+	tdma_sp = 2*tdma_gp + tdma_txp;
+	tdma_p = tdma_sp * tdma_nc;
 	
 }
 

@@ -147,9 +147,11 @@ void LEUART1_IRQHandler(void) {
     }
     nmea_buffer[nmea_len++] = b;
     //send it to bypass problems with trace...
+    /*
     if (fix == 0) {
-        //UART1->TXDATA = b;
+        UART1->TXDATA = b;
     }
+    */
     if (b == '\n') {
         nmea_msg_rcvd = 1;
     }
@@ -192,7 +194,7 @@ void GPS_GetFix() {
         }
     }
     
-
+    
 }
 
 /**

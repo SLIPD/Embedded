@@ -80,7 +80,7 @@ int main()
 	initClocks();
              
 	// I2C setup
-	//I2C_Setup();
+	I2C_Setup();
 
 	TRACE_Init();
 	TRACE("Trace started!\n");
@@ -126,7 +126,7 @@ int main()
 	DISPLAY_InitMessage(&displayMessageBottom);
 
 	// display getting fix message
-	
+	*/
 	// magnetometer init
 	MAGInit(); 
 	magReading.x = MAGReadX_16();
@@ -138,7 +138,7 @@ int main()
 	accelReading.x =  MMAReadX_14();
 	accelReading.y =  MMAReadY_14();
 	accelReading.z =  MMAReadZ_14();
-        */
+        
         // eCompass init
 //        eCompassInit();
         

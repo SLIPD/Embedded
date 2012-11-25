@@ -6,6 +6,8 @@
 
 #include "efm32_gpio.h"
 
+#include "packets.h"
+
 #define NRF_CE_PORT 1
 #define NRF_CE_PIN 1
 #define NRF_INT_PORT 1
@@ -77,5 +79,6 @@ void RADIO_Init();
 void RADIO_GetID();
 void RADIO_EnableTDMA();
 void RADIO_HandleMessages();
+void RADIO_ConfigTDMA(Packet p);
 
 #endif
