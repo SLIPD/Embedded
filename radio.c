@@ -176,7 +176,7 @@ void radio_cs(USART_ChipSelect set)
 void RADIO_SetMode(RADIO_Mode rm)
 {
 	
-	//TRACE("%i: RADIO_SetMode(): set mode to: 0x%2.2X\n", TIMER_CounterGet(TIMER1), rm);
+	TRACE("%i: RADIO_SetMode(): set mode to: 0x%2.2X\n", TIMER_CounterGet(TIMER1), rm);
 	
 	uint8_t cmd = NRF_FLUSH_RX;
 	USART2_Transfer(&cmd,1,radio_cs, NULL);
@@ -202,7 +202,7 @@ void RADIO_SetMode(RADIO_Mode rm)
 void RADIO_Enable(RADIO_Mode rm)
 {
 
-	//TRACE("%i: RADIO_Enable(): enable: 0x%2.2X\n", TIMER_CounterGet(TIMER1), rm);
+	TRACE("%i: RADIO_Enable(): enable: 0x%2.2X\n", TIMER_CounterGet(TIMER1), rm);
 
 	switch (rm)
 	{
@@ -246,6 +246,12 @@ void radio_writeRegister(uint8_t reg, uint8_t value)
 
 bool RADIO_Send(uint8_t payload[32])
 {
+	
+	uint16_t time = RTC_CounterGet();
+	
+	payload[0] = node_id;
+	payload[4] = time & 0xFF;
+	payload[5] = (time >> 8) & 0xFF;
 	
 	return QUEUE_Write(&txBuffer, payload);
 	
@@ -524,14 +530,17 @@ void RADIO_EnableTDMA()
 	TIMER_IntEnable(PPS_TIMER, PPS_TIMER_IRQ);
 	TIMER_InitCC(PPS_TIMER, PPS_TIMER_CC, &timerCCInitCapture);
 	
-	int i;
+	uint32_t i = 1;
 	while (!syncd)
 	{
-		if (i++ % 1000000 == 0)
+		if (((i++) % 1000000) == 0)
+		{
 			TRACE(":WAITING FOR SYNC\n");
+			i = 1;
+		}
 	}
 	
-	TRACE("Syncd\n");
+	TRACE(":SYNCD\n");
 	TRACE("Switching to channel %i\n", tdma_c);
 	radio_writeRegister(NRF_RF_CH,tdma_c);
 	
@@ -587,18 +596,15 @@ void RADIO_EnableTDMA()
 	// enable TS
 	TS_Complete(&radio_schedule);
 	
-	INT_Disable();
-	
-	NVIC_ClearPendingIRQ(TIMER1_IRQn);
 	TIMER_IntClear(RADIO_TIMER, SCHEDULE_TIMER_IRQ);
 	TIMER_IntEnable(RADIO_TIMER, SCHEDULE_TIMER_IRQ);
-	
-	INT_Enable();
 	
 }
 
 void RADIOTIMER_IRQHandler()
 {
+	
+	TRACE(":SCHDLR\n");
 	
 	uint32_t flags = TIMER_IntGet(RADIO_TIMER);
 	
@@ -616,11 +622,13 @@ void RADIOTIMER_IRQHandler()
 void PPSTIMER_IRQHandler()
 {
 	
+	TRACE(":PPS\n");
+	
 	if (TIMER_IntGet(PPS_TIMER) & PPS_TIMER_IRQ)
 	{
-		uint32_t diff = TIMER_CounterGet(TIMER0) - TIMER_CaptureGet(TIMER0,PPS_TIMER_CC);
-		TIMER_CounterSet(TIMER0,diff);
-		TIMER_CounterSet(TIMER1,diff);
+		uint32_t diff = TIMER_CounterGet(PPS_TIMER) - TIMER_CaptureGet(PPS_TIMER,PPS_TIMER_CC);
+		TIMER_CounterSet(RADIO_TIMER,diff);
+		TIMER_CounterSet(PPS_TIMER,diff);
 		TIMER_IntClear(PPS_TIMER, PPS_TIMER_IRQ);
 		syncd = true;
 	}

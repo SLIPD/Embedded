@@ -89,9 +89,9 @@ void GPS_Init() {
         TRACE("SWITCHING MODE");
         switchMode();
     }
-    TRACE("ENABLING GPS INTERRUPT");
-    NVIC_EnableIRQ(LEUART1_IRQn);
-    TRACE("GPS INIT COMPLETE");
+    TRACE("ENABLING GPS INTERRUPT\n");
+    
+    TRACE("GPS INIT COMPLETE\n");
 
 
 }
@@ -142,16 +142,19 @@ void LEUART1_IRQHandler(void) {
     if (b == '$') {
         nmea_len = 0;
     }
-    if (nmea_len >= 254) {
+    if (nmea_len >= 253) {
         nmea_len = 0;
     }
+
     nmea_buffer[nmea_len++] = b;
-    //send it to bypass problems with trace...
     
-    UART1->TXDATA = b;
+    //send it to bypass problems with trace...
+    //UART1->TXDATA = b;
     
     if (b == '\n') {
-        nmea_msg_rcvd = 1;
+			nmea_buffer[nmea_len++] = '\0';
+			//TRACE(nmea_buffer);
+      nmea_msg_rcvd = 1;
     }
 }
 
@@ -186,7 +189,7 @@ void GPS_GetFix() {
 
             }
 
-
+						TRACE(localBuff);
             nmea_msg_rcvd = 0;
 
         }
@@ -197,33 +200,33 @@ void GPS_GetFix() {
 
 void GPS_GetPrecision(uint8_t target_precision)
 {
-	
+
 	bool precision_reached = false;
 	while(!precision_reached)
 	{
-		
+
 		if (nmea_msg_rcvd)
 		{
 			INT_Disable();
 			memcpy(localBuff, nmea_buffer, 256);
 			INT_Enable();
-			
+
 			uint8_t precision = 0;
 			uint8_t msg_type[6];
-			
+
 			memcpy(msg_type, &localBuff[1], 5);
-			
+
 			msg_type[5] = 0;
-			
+
 			char *msg_req_type = "GPGSA";
-			
+
 			if (strcmp((char*)msg_type,msg_req_type) == 0)
 			{
-				
+
 				int commas = 0;
 				int x = 0;
 				uint8_t decimal_places = 0xFF;
-				
+
 				do
 				{
 					if (localBuff[x] == ',') {
@@ -234,7 +237,7 @@ void GPS_GetPrecision(uint8_t target_precision)
 					switch(commas)
 					{
 						case 15:
-							
+
 							if (decimal_places != 0xFF)
 							{
 								decimal_places += 1;
@@ -243,35 +246,35 @@ void GPS_GetPrecision(uint8_t target_precision)
 									break;
 								}
 							}
-							
+
 							if (localBuff[x] == '.')
 							{
 								decimal_places = 0;
-								
+
 							}
 							else
 							{
 								precision *= 10;
 								precision += (localBuff[x] - '0');
-								
+
 							}
-							
+
 							break;
 					}
 					x++;
 				}
 				while (localBuff[x] != '\n');
-				
+
 				if (precision < target_precision)
 					precision_reached = true;
-				
+
 			}
-			
+
 			nmea_msg_rcvd = 0;
 		}
-		
+
 	}
-	
+
 }
 
 /**
