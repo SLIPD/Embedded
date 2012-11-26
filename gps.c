@@ -186,8 +186,9 @@ void GPS_GetFix() {
                         LED_On(1);
                         fix = 1;
                 }
-
+								
             }
+						
 						TRACE(localBuff);
             nmea_msg_rcvd = 0;
 

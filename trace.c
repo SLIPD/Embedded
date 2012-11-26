@@ -65,7 +65,7 @@ void TRACE(char *format, ...)
 	
 	#ifndef BASESTATION
 		
-		INT_Disable();
+		//INT_Disable();
 		
 		char msg[512];
 		
@@ -85,7 +85,7 @@ void TRACE(char *format, ...)
 		
 		//USART_IntEnable(UART1, UART_IF_TXBL);
 		
-		INT_Enable();
+		//INT_Enable();
 		
 	#endif
 	
