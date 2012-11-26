@@ -80,7 +80,7 @@ int main()
 	initClocks();
              
 	// I2C setup
-	//I2C_Setup();
+	I2C_Setup();
 
 	TRACE_Init();
 	TRACE("Trace started!\n");
@@ -128,7 +128,7 @@ int main()
 	// display getting fix message
 	*/
 	// magnetometer init
-	/*
+	
 	MAGInit(); 
 	magReading.x = MAGReadX_16();
 	magReading.y = MAGReadY_16();
@@ -139,7 +139,7 @@ int main()
 	accelReading.x =  MMAReadX_14();
 	accelReading.y =  MMAReadY_14();
 	accelReading.z =  MMAReadZ_14();
-	*/
+	
 	// eCompass init
 	//eCompassInit();
   
@@ -147,25 +147,21 @@ int main()
 	RADIO_Init();
 	
 	// radio get id
-	//RADIO_GetID();
+	RADIO_GetID();
 	
 	// wait for gps initial fix
 	GPS_GetFix();
+	
+	LED_Off(RED);
 	
 	TRACE(":FIX FOUND\n");
 	
 	// enable tdma
 	RADIO_EnableTDMA();
 	
-	LED_On(RED);
-	LED_On(GREEN);
-	LED_On(BLUE);
+	Packet p;
 	
-	while (1)
-	{
-		TRACE(":TDMA STARTED\n");
-		for (int i = 0; i < 1000000; i++);
-	}
+	LED_On(RED);
 	
 	while(1)
 	{
@@ -173,8 +169,20 @@ int main()
 		// handle radio msgs
 		RADIO_HandleMessages();
 		
+		if (RADIO_Recv((uint8_t*)&p))
+		{
+			if (p.msgType == 0x03 && p.payload.message.message[0] == 0x01)
+			{
+				p.destinationId = 0x00;
+				p.ttl = 1;
+				p.payload.message.message[0] = 0x02;
+				RADIO_Send((uint8_t*)&p);
+				LED_Toggle(RED);
+			}
+		}
+		
 		// display update
-    DISPLAY_Update();
+    //DISPLAY_Update();
                 
 		// gps update
    

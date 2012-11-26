@@ -79,10 +79,6 @@ void TRACE(char *format, ...)
 		{
 			trace_buf[trace_writePosition] = msg[i];
 			trace_writePosition = (trace_writePosition + 1) % TRACE_BUF_SIZE;
-			//while (trace_writePosition == trace_readPosition)
-			//	USART_IntEnable(UART1, UART_IF_TXBL);
-			//while (!(UART1->STATUS & UART_STATUS_TXBL));
-			//UART1->TXDATA = msg[i];
 		}
 		
 		USART_IntEnable(UART1, UART_IF_TXBL);
