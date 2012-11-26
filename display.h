@@ -5,11 +5,18 @@
 #include "stdbool.h"
 #include "efm32_i2c.h"
 
-#define HARD_LEFT       "<<<            "
-#define SOFT_LEFT       "   <<<         "
+#define HARD_LEFT       ">>>            "
+#define SOFT_LEFT       "   >>>         "
 #define STRAIGHT        "      ^^^      "
-#define SOFT_RIGHT      "         >>>   "
-#define HARD_RIGHT      "            >>>"
+#define SOFT_RIGHT      "         <<<   "
+#define HARD_RIGHT      "            <<<"
+
+#define FORWARD         2
+#define TURN_RIGHT      3
+#define TURN_LEFT       1
+#define TURN__RIGHT     4
+#define TURN__LEFT      0
+#define BAD_HEADING     5
 
 typedef struct
 {
@@ -26,7 +33,9 @@ typedef struct
 
 
 /* prototypes */
-void DISPLAY_dir(uint8_t dir);
+void DISPLAY_direction(uint8_t dir);
+void DISPLAY_heading(float heading);
+
 void DISPLAY_clearScreen();
 void DISPLAY_returnHome();
 void DISPLAY_entryModeSet(uint8_t id, uint8_t s);
@@ -40,6 +49,7 @@ void DISPLAY_SetMessage(DISPLAY_Message *msg);
 
 void DISPLAY_updateLine(DISPLAY_Message *line);
 void DISPLAY_Update();
+void DISPLAY_MessageWrite(DISPLAY_Message *msg);
 void DISPLAY_Init();
 
 void DISPLAY_sendByte(uint8_t control, uint8_t data);

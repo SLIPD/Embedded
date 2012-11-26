@@ -247,6 +247,12 @@ void radio_writeRegister(uint8_t reg, uint8_t value)
 bool RADIO_Send(uint8_t payload[32])
 {
 	
+	uint16_t time = RTC_CounterGet();
+	
+	payload[0] = node_id;
+	payload[4] = time & 0xFF;
+	payload[5] = (time >> 8) & 0xFF;
+	
 	return QUEUE_Write(&txBuffer, payload);
 	
 }

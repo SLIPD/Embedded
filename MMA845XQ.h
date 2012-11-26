@@ -219,6 +219,13 @@ extern "C" {
 
 #define WHO_AM_I_REG 0x0D
 #define INT_SOURCE 0x0C
+    
+typedef struct {
+  int16_t x;
+  int16_t y;
+  int16_t z;
+} Accel_Vector_Type __attribute__ ((packed));
+#define Accel_Vector_Len 6
 
 void MMAStandby(void);
 void MMAActive(void);
@@ -234,12 +241,7 @@ int16_t MMAReadX_14();
 int16_t MMAReadY_14();
 int16_t MMAReadZ_14();
 
-typedef struct {
-  int16_t x;
-  int16_t y;
-  int16_t z;
-} Accel_Vector_Type __attribute__ ((packed));
-#define Accel_Vector_Len 6
+Accel_Vector_Type getMMAReadings();
 
 //void MMA_IRQHandler(void);
 

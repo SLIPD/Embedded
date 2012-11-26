@@ -40,7 +40,7 @@ bool displayUpdateRequired = false;
 // dir: 2 straight
 // dir: 3 soft right
 // dir: 4 hard right
-void DISPLAY_dir(uint8_t dir)
+void DISPLAY_direction(uint8_t direction)
 {
     // Clear top line
     char blank[16];
@@ -52,14 +52,14 @@ void DISPLAY_dir(uint8_t dir)
     char *str;
     
     // Set direction 
-    switch(dir)
+    switch(direction)
     {
         case 0:
-            str = HARD_LEFT;
+            str = HARD_RIGHT;
             break;
             
         case 1:
-            str = SOFT_LEFT;
+            str = SOFT_RIGHT;
             break; 
             
         case 2:
@@ -67,25 +67,60 @@ void DISPLAY_dir(uint8_t dir)
             break;   
             
         case 3:
-            str = SOFT_RIGHT;
+            str = SOFT_LEFT;
             break;
             
         case 4:
-            str = HARD_RIGHT;
+            str = HARD_LEFT;
             break;
-            
+        case 5:
+            str =":D :D :D :D :D";   
+            break;
         default:
             break;
     }
      
     // Set line1 attributes
-    if (dir >= 0 && dir <= 5)
+    if (direction >= 0 && direction <= 5)
     {
             line1.enabled = true;
             line1.scroll = false;
             line1.message = str;
             line1.length = 15;
             displayUpdateRequired = true;
+    }
+}
+
+// heading is direction speck is facing
+// goal is the destination heading
+void DISPLAY_heading(float heading)
+{
+//    char str[32];
+//    sprintf(str, "heading %.3f\n", heading);
+//    TRACE(str);
+    if((heading >= 345.0 && heading <= 360.0) || (heading >=  0 && heading <= 15))
+    {
+        DISPLAY_direction(FORWARD);
+    }   
+    else if((heading >= 270.0 && heading < 345.0))
+    {
+        DISPLAY_direction(TURN_RIGHT);
+    } 
+    else if((heading >= 180.0 && heading < 270.0))
+    {
+        DISPLAY_direction(TURN__RIGHT);
+    } 
+    else if((heading > 15.0 && heading <= 90.0))
+    {
+        DISPLAY_direction(TURN_LEFT);
+    } 
+    else if((heading > 90.0 && heading < 180.0))
+    {
+        DISPLAY_direction(TURN__LEFT);
+    } 
+    else
+    {
+        DISPLAY_direction(BAD_HEADING);
     }
 }
 
@@ -263,6 +298,13 @@ void DISPLAY_Update()
 
 	displayUpdateRequired = false;
         
+}
+
+void DISPLAY_MessageWrite(DISPLAY_Message *msg)
+{
+    msg->enabled = true;
+    DISPLAY_SetMessage(msg);
+    DISPLAY_Update();
 }
 
 void DISPLAY_Init()

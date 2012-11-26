@@ -229,6 +229,7 @@ void LEUART1_IRQHandler(void) {
     if (nmea_len >= 253) {
         nmea_len = 0;
     }
+
     nmea_buffer[nmea_len++] = b;
 
 
@@ -280,7 +281,10 @@ void GPS_GetFix() {
 
             }
 
-            TRACE(localBuff);
+
+
+						TRACE(localBuff);
+
             nmea_msg_rcvd = 0;
 
         }
@@ -288,6 +292,7 @@ void GPS_GetFix() {
 
 
 }
+
 
 void GPS_GetPrecision(uint8_t target_precision) {
 
