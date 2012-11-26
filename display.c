@@ -55,11 +55,11 @@ void DISPLAY_direction(uint8_t direction)
     switch(direction)
     {
         case 0:
-            str = HARD_LEFT;
+            str = HARD_RIGHT;
             break;
             
         case 1:
-            str = SOFT_LEFT;
+            str = SOFT_RIGHT;
             break; 
             
         case 2:
@@ -67,14 +67,14 @@ void DISPLAY_direction(uint8_t direction)
             break;   
             
         case 3:
-            str = SOFT_RIGHT;
+            str = SOFT_LEFT;
             break;
             
         case 4:
-            str = HARD_RIGHT;
+            str = HARD_LEFT;
             break;
         case 5:
-            str ="LOLLOLLOLLOLLOL";   
+            str =":D :D :D :D :D";   
             break;
         default:
             break;
@@ -91,6 +91,9 @@ void DISPLAY_direction(uint8_t direction)
     }
 }
 
+// heading is direction speck is facing
+// goal is the destination heading
+//void DISPLAY_heading(float heading, float goal)
 void DISPLAY_heading(float heading)
 {
 //    char str[32];
@@ -98,27 +101,27 @@ void DISPLAY_heading(float heading)
 //    TRACE(str);
     if((heading >= 345.0 && heading <= 360.0) || (heading >=  0 && heading <= 15))
     {
-        DISPLAY_direction(2);
+        DISPLAY_direction(FORWARD);
     }   
-    else if((heading >= 300.0 && heading < 345.0))
+    else if((heading >= 270.0 && heading < 345.0))
     {
-        DISPLAY_direction(3);
+        DISPLAY_direction(TURN_RIGHT);
     } 
-    else if((heading > 15.0 && heading <= 60.0))
+    else if((heading >= 180.0 && heading < 270.0))
     {
-        DISPLAY_direction(1);
+        DISPLAY_direction(TURN__RIGHT);
     } 
-    else if((heading >= 270.0 && heading < 300.0))
+    else if((heading > 15.0 && heading <= 90.0))
     {
-        DISPLAY_direction(4);
+        DISPLAY_direction(TURN_LEFT);
     } 
-    else if((heading > 60.0 && heading < 90.0))
+    else if((heading > 90.0 && heading < 180.0))
     {
-        DISPLAY_direction(0);
+        DISPLAY_direction(TURN__LEFT);
     } 
     else
     {
-        DISPLAY_direction(5);
+        DISPLAY_direction(BAD_HEADING);
     }
 }
 
