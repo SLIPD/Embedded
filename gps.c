@@ -349,7 +349,7 @@ void GPS_GetPrecision(uint8_t target_precision) {
                     x++;
                 } while (localBuff[x] != '\n');
 
-                if (precision < target_precision)
+                if (precision < target_precision && precision > 0)
                     precision_reached = true;
 
             }
