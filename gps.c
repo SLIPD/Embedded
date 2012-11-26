@@ -148,8 +148,7 @@ void LEUART1_IRQHandler(void) {
 		
     nmea_buffer[nmea_len++] = b;
     
-    //send it to bypass problems with trace...
-    //UART1->TXDATA = b;
+    
     
     if (b == '\n') {
 			nmea_buffer[nmea_len++] = '\0';
@@ -282,7 +281,6 @@ void GPS_GetPrecision(uint8_t target_precision)
  */
 void GPS_Read(GPS_Vector_Type *vector) {
     int gotLocation = 0;
-
     while (gotLocation == 0) {
         if (nmea_msg_rcvd) {
 
@@ -303,9 +301,11 @@ void GPS_Read(GPS_Vector_Type *vector) {
                     //east/west indicator
                     int east = 1;
                     //
+                    int altCount = 0;
                     uint8_t longBuff[11] = "dddmm.mmmm";
                     uint8_t latBuff[10] = "ddmm.mmmm";
-
+                    uint8_t altBuffer[16] = "";
+                    
                     //variables used for counting lat/long into buffer
                     int start, bufCount;
                     do {
@@ -359,41 +359,14 @@ void GPS_Read(GPS_Vector_Type *vector) {
                                     fix = 0;
                                 }
                                 break;
-                            //HERE BE DANGER
-                            //case 9:
+                            case 9:
+                                //altitude with 1 decimal place
+                                if (localBuff[x]!='.'){
+                                    altBuffer[altCount] = localBuff[x];
+                                    
+                                }
+                                altCount++;
                                 
-                                //altitude
-//                                int altcounter;
-//                                int altsize = 0;
-//                                altcounter = x;
-//                                int start = x;
-//                                int indexOfPoint = -1;
-//                                while (nmea_buffer[altcounter] != ',') {
-//                                    altsize++;
-//                                }
-//                                int8_t altBuffer[altsize];
-//                                while (x < (start + (altsize - 1))) {
-//                                    altBuffer[bufCount] = localBuff[x];
-//                                    if (altBuffer[bufCount] == '.') {
-//                                        indexOfPoint = bufCount;
-//                                    }
-//                                    bufCount++;
-//                                    x++;
-//                                }
-//                                altBuffer[bufCount] = localBuff[x];
-//                                int32_t altitude;
-//                                //convert to an int
-//                                if (indexOfPoint != '-1') {
-//                                    
-//                                    altBuffer[indexOfPoint] = "\0";
-//                                    altitude = 100 * atoi(altBuffer);
-//                                    altitude += 10 * atoi(&altBuffer[indexOfPoint + 1]); //assume only 1 d.p
-//                                } else {
-//                                    altitude = 100 * atoi(altBuffer);
-//                                }
-//                                vector.alt = altitude;
-//                                break;
-                                //HERE ENDs THE DANGER
 
                         }
                         
@@ -414,13 +387,18 @@ void GPS_Read(GPS_Vector_Type *vector) {
                     //convert to integers
                     longBuff[5] = "\0";
                     latBuff[4] = "\0";
+                    altBuffer[altCount] = "\0";
+                    short altit = atoi(altBuffer);
+                    TRACE("alt : %i ", altit );
+                    
                     int32_t longitude = 10000 * atoi(longBuff);
                     longitude += atoi(&longBuff[6]);
                     longitude = longitude*east;
                     int32_t latitude = 10000 * atoi(latBuff);
                     latitude += atoi(&latBuff[5]);
                     latitude = latitude*north;
-
+                    
+                    vector->alt = altit;
                     vector->lat = latitude;
                     vector->lon = longitude;
                     //replace this later
