@@ -14,7 +14,6 @@ typedef struct
 	uint8_t nodeId;
 	uint8_t nc;
 	uint8_t c;
-	uint8_t gpsDataRecvd;
 	
 } MessageType_Identification;
 

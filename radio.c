@@ -382,7 +382,6 @@ void RADIO_GetID()
 	ident.payload.identification.id0 = *((uint32_t*)(0xFE081F0));
 	ident.payload.identification.id1 = *((uint32_t*)(0xFE081F4));
 	ident.payload.identification.nodeId = 0xFF;
-	ident.payload.identification.gpsDataRecvd = 0;
 	
 	int32_t next_send = 0,
 		last = RTC_CounterGet();
@@ -445,20 +444,6 @@ void RADIO_GetID()
 				identified = true;
 				
 				break;
-				
-			}
-			
-			if (incoming.originId == 0x00 &&
-				incoming.destinationId == 0xFF &&
-				incoming.msgType == 0x04 &&
-				(!ident.payload.identification.gpsDataRecvd))
-			{
-				
-				// warm start gps
-				uint8_t *packet = (uint8_t*)&packet;
-				//GPS_WarmReset(*((int32_t*)&packet[6]), *((int32_t*)&packet[10]), *((int32_t*)&packet[14]), *((uint32_t*)&packet[18]), *((uint16_t*)&packet[22]));
-				
-				ident.payload.identification.gpsDataRecvd = 1;
 				
 			}
 			
