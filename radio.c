@@ -17,6 +17,7 @@
 #include "queue.h"
 #include "time_schedule.h"
 #include "config.h"
+#include "gps.h"
 
 /* variables */
 uint8_t txBufferMem[RADIO_BUFFER_SIZE * 32],
@@ -381,6 +382,7 @@ void RADIO_GetID()
 	ident.payload.identification.id0 = *((uint32_t*)(0xFE081F0));
 	ident.payload.identification.id1 = *((uint32_t*)(0xFE081F4));
 	ident.payload.identification.nodeId = 0xFF;
+	ident.payload.identification.gpsDataRecvd = 0;
 	
 	int32_t next_send = 0,
 		last = RTC_CounterGet();
@@ -420,7 +422,7 @@ void RADIO_GetID()
 		while (RADIO_Recv((uint8_t*)&incoming))
 		{
 			
-			
+			/*
 			uint8_t* pos = (uint8_t*)&incoming;
 			int i;
 			for (i = 0; i < 32; i++)
@@ -428,7 +430,7 @@ void RADIO_GetID()
 				TRACE("0x%2.2X ", *pos++);
 			}
 			TRACE("\n");
-			
+			*/
 				
 			if (incoming.originId == 0x00 &&
 				incoming.destinationId == 0xFF &&
@@ -443,6 +445,20 @@ void RADIO_GetID()
 				identified = true;
 				
 				break;
+				
+			}
+			
+			if (incoming.originId == 0x00 &&
+				incoming.destinationId == 0xFF &&
+				incoming.msgType == 0x04 &&
+				(!ident.payload.identification.gpsDataRecvd))
+			{
+				
+				// warm start gps
+				uint8_t *packet = (uint8_t*)&packet;
+				//GPS_WarmReset(*((int32_t*)&packet[6]), *((int32_t*)&packet[10]), *((int32_t*)&packet[14]), *((uint32_t*)&packet[18]), *((uint16_t*)&packet[22]));
+				
+				ident.payload.identification.gpsDataRecvd = 1;
 				
 			}
 			
