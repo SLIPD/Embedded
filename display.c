@@ -93,7 +93,6 @@ void DISPLAY_direction(uint8_t direction)
 
 // heading is direction speck is facing
 // goal is the destination heading
-//void DISPLAY_heading(float heading, float goal)
 void DISPLAY_heading(float heading)
 {
 //    char str[32];
