@@ -174,7 +174,7 @@ int main()
 		RADIO_HandleMessages();
 		
 		// display update
-    //DISPLAY_Update();
+    DISPLAY_Update();
                 
 		// gps update
    

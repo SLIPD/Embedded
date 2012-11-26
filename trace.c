@@ -18,9 +18,9 @@
 
 /* variables */
 #define TRACE_BUF_SIZE 2048
-static uint8_t trace_buf[TRACE_BUF_SIZE],
-	trace_writePosition = 0,
-	trace_readPosition = 0;
+static uint8_t trace_buf[TRACE_BUF_SIZE];
+uint32_t trace_writePosition = 0,
+	trace_readPosition = TRACE_BUF_SIZE-1;
 
 /* prototypes */
 
@@ -48,9 +48,9 @@ void UART1_TX_IRQHandler()
 	if (!(UART1->STATUS & UART_STATUS_TXBL))
 		return;
 	
-	if (trace_readPosition != trace_writePosition)
+	if ((trace_readPosition+1)%TRACE_BUF_SIZE != trace_writePosition)
 	{
-		UART1->TXDATA = trace_buf[trace_readPosition];
+		UART1->TXDATA = trace_buf[(trace_readPosition+1)%TRACE_BUF_SIZE];
 		trace_readPosition = (trace_readPosition + 1) % TRACE_BUF_SIZE;
 	}
 	else
@@ -77,13 +77,15 @@ void TRACE(char *format, ...)
 		int i;
 		for (i = 0; i < strlen(msg); i++)
 		{
-			//trace_buf[trace_writePosition] = msg[i];
-			//trace_writePosition = (trace_writePosition + 1) % TRACE_BUF_SIZE;
-			while (!(UART1->STATUS & UART_STATUS_TXBL));
-			UART1->TXDATA = msg[i];
+			trace_buf[trace_writePosition] = msg[i];
+			trace_writePosition = (trace_writePosition + 1) % TRACE_BUF_SIZE;
+			//while (trace_writePosition == trace_readPosition)
+			//	USART_IntEnable(UART1, UART_IF_TXBL);
+			//while (!(UART1->STATUS & UART_STATUS_TXBL));
+			//UART1->TXDATA = msg[i];
 		}
 		
-		//USART_IntEnable(UART1, UART_IF_TXBL);
+		USART_IntEnable(UART1, UART_IF_TXBL);
 		
 		INT_Enable();
 		
