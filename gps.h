@@ -19,7 +19,7 @@ typedef struct
 {
     int32_t lon;
     int32_t lat;
-    int32_t alt; //in cm
+    short alt; //in cm
 
 } GPS_Vector_Type __attribute__ ((packed));
 
@@ -30,5 +30,8 @@ void GPS_Read(GPS_Vector_Type *vector);
 void GPS_GetFix();
 void switchMode();
 void GPS_GetPrecision(uint8_t target_precision);
+uint8_t nmea_generateChecksum(char *strPtr) ;
+void leuart_send_str(LEUART_TypeDef *uart, char *msg);
+void Reset();
 
 #endif  /* __GPS_H__ */
