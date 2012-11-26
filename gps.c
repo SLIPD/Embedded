@@ -27,13 +27,17 @@ uint32_t nmea_len = 0;
 uint32_t nmea_msg_rcvd = 0;
 uint8_t nmea_buffer[256];
 uint8_t localBuff[256];
-
+GPS_Vector_Type *lastRead;
 /* prototypes */
 void switchMode();
 
 /* functions */
 void GPS_Init() {
 
+    lastRead->alt = 0;
+    lastRead->lat = 0;
+    lastRead->lon = 0;
+    int nextRTC;
     fix = 0;
     LEUART_Init_TypeDef leuart1Init = {
         .enable = leuartEnable, /* Activate data reception on LEUn_TX pin. */
@@ -75,25 +79,48 @@ void GPS_Init() {
     GPIO->P[4].MODEH = (GPIO->P[4].MODEH & ~_GPIO_P_MODEH_MODE13_MASK) | GPIO_P_MODEH_MODE13_PUSHPULL;
 
 
-
-    //LEUART1->CMD = LEUART_CMD_CLEARRX | LEUART_CMD_CLEARTX;
-    //requests the following messages
-    //GSV , RMC , and (no gga but can change that)
-    leuart_send_array(LEUART1, sirf_command_NMEA, sizeof (sirf_command_NMEA));
-    leuart_send_array(LEUART1, sirf_command_NMEA, sizeof (sirf_command_NMEA));
-    leuart_send_array(LEUART1, sirf_command_NMEA, sizeof (sirf_command_NMEA));
-    leuart_send_array(LEUART1, sirf_command_NMEA, sizeof (sirf_command_NMEA));
     RTC_CounterReset();
+    while (RTC->CNT < 65536);
+    leuart_send_array(LEUART1, sirf_command_NMEA, sizeof(sirf_command_NMEA));
+    leuart_send_array(LEUART1, sirf_command_NMEA, sizeof(sirf_command_NMEA));
+    leuart_send_array(LEUART1, sirf_command_NMEA, sizeof(sirf_command_NMEA));
+    leuart_send_array(LEUART1, sirf_command_NMEA, sizeof(sirf_command_NMEA));
+    //uart_setbaud(LEUART1,4800);
+    while (RTC->CNT < (65536 + 9*(16000)));
+ 
+    nmea_sendmessage(LEUART1, "PSRF117,16");
+    
+    
 
+    while (RTC->CNT < (65536 + 10*(16000)));
+
+   /* Pulse GPS on/off signal for 500 ms */
+    nextRTC = RTC->CNT + 8000;
+    GPIO->P[4].DOUT = 1 << 13;
+    while (RTC->CNT < nextRTC);
+    GPIO->P[4].DOUT = 0;
+
+    TRACE("hello");
+    Reset();
+    
+    RTC_CounterReset();
     while (!(GPIO->P[4].DIN & (1 << 12))) {
         TRACE("SWITCHING MODE");
         switchMode();
     }
-    TRACE("ENABLING GPS INTERRUPT\n");
-    
+
+       
     TRACE("GPS INIT COMPLETE\n");
 
 
+}
+
+void Reset(){
+    nmea_sendmessage(LEUART1, "PSRF101,0,0,0,0,0,0,8");
+}
+
+void WarmReset(){
+    nmea_sendmessage(LEUART1, "PSRF101,0,0,0,0,0,0,8");
 }
 
 void switchMode() {
@@ -126,6 +153,63 @@ void switchMode() {
 
 }
 
+uint8_t nmea_generateChecksum(char *strPtr) {
+    int p;
+    char c;
+    uint8_t chksum;
+
+    c = strPtr[0]; // get first chr 
+    chksum = c;
+    p = 1;
+    while (c != 0x00) {
+        c = strPtr[p]; // get next chr 
+        if (c != 0x00) {
+            chksum = chksum ^ c;
+        }
+        p++;
+    }
+
+    return chksum;
+}
+
+void leuart_send_str(LEUART_TypeDef *uart, char *msg) {
+    uint8_t c;
+    while ((c = *(msg++)) != 0) {
+        while (!(uart->STATUS & LEUART_STATUS_TXBL));
+        uart->TXDATA = c;
+    }
+}
+
+
+// send nmea message with checksum. 0 terminated string not including $,*,CHK,CRLF
+
+void nmea_sendmessage(LEUART_TypeDef *uart, char *msg) {
+    uint8_t chksum;
+    uint8_t c;
+    chksum = nmea_generateChecksum(msg);
+    while (!(uart->STATUS & LEUART_STATUS_TXBL));
+    uart->TXDATA = '$';
+    leuart_send_str(uart, msg);
+    while (!(uart->STATUS & LEUART_STATUS_TXBL));
+    uart->TXDATA = '*';
+    while (!(uart->STATUS & LEUART_STATUS_TXBL));
+    if (((chksum & 0xF0) >> 4) > 9) {
+        uart->TXDATA = ((chksum & 0xF0) >> 4) - 10 + 'A';
+    } else {
+        uart->TXDATA = ((chksum & 0xF0) >> 4) + '0';
+    }
+    while (!(uart->STATUS & LEUART_STATUS_TXBL));
+    if (((chksum & 0x0F)) > 9) {
+        uart->TXDATA = ((chksum & 0x0F)) - 10 + 'A';
+    } else {
+        uart->TXDATA = ((chksum & 0x0F)) + '0';
+    }
+    while (!(uart->STATUS & LEUART_STATUS_TXBL));
+    uart->TXDATA = '\r';
+    while (!(uart->STATUS & LEUART_STATUS_TXBL));
+    uart->TXDATA = '\n';
+}
+
 void leuart_send_array(LEUART_TypeDef *uart, uint8_t *msg, uint32_t len) {
     for (int i = 0; i < len; i++) {
         while (!(uart->STATUS & LEUART_STATUS_TXBL));
@@ -145,15 +229,14 @@ void LEUART1_IRQHandler(void) {
     if (nmea_len >= 253) {
         nmea_len = 0;
     }
-		
     nmea_buffer[nmea_len++] = b;
-    
-    
-    
+
+
+
     if (b == '\n') {
-			nmea_buffer[nmea_len++] = '\0';
-			//TRACE(nmea_buffer);
-      nmea_msg_rcvd = 1;
+        nmea_buffer[nmea_len++] = '\0';
+        //TRACE(nmea_buffer);
+        nmea_msg_rcvd = 1;
     }
 }
 
@@ -184,96 +267,93 @@ void GPS_GetFix() {
                         LED_Off(3);
                         LED_On(1);
                         fix = 1;
+                        //gga every second, turn others off
+                        
+                        nmea_sendmessage(LEUART1, "PSRF103,00,00,01,01");
+                        nmea_sendmessage(LEUART1, "PSRF103,03,00,00,01");
+                        nmea_sendmessage(LEUART1, "PSRF103,04,00,00,01");
+#ifndef BASESTATION
+                        //turn off gsa messages if we are not the basestation
+                        nmea_sendmessage(LEUART1, "PSRF103,02,00,00,01");
+#endif
                 }
-								
+
             }
-						
-						TRACE(localBuff);
+
+            TRACE(localBuff);
             nmea_msg_rcvd = 0;
 
         }
     }
-    
-    
+
+
 }
 
-void GPS_GetPrecision(uint8_t target_precision)
-{
-	
-	bool precision_reached = false;
-	while(!precision_reached)
-	{
-		
-		if (nmea_msg_rcvd)
-		{
-			INT_Disable();
-			memcpy(localBuff, nmea_buffer, 256);
-			INT_Enable();
-			
-			uint8_t precision = 0;
-			uint8_t msg_type[6];
-			
-			memcpy(msg_type, &localBuff[1], 5);
-			
-			msg_type[5] = 0;
-			
-			char *msg_req_type = "GPGSA";
-			
-			if (strcmp((char*)msg_type,msg_req_type) == 0)
-			{
-				
-				int commas = 0;
-				int x = 0;
-				uint8_t decimal_places = 0xFF;
-				
-				do
-				{
-					if (localBuff[x] == ',') {
-							commas++;
-							x++;
-							continue;
-					}
-					switch(commas)
-					{
-						case 15:
-							
-							if (decimal_places != 0xFF)
-							{
-								decimal_places += 1;
-								if (decimal_places > 1)
-								{
-									break;
-								}
-							}
-							
-							if (localBuff[x] == '.')
-							{
-								decimal_places = 0;
-								
-							}
-							else
-							{
-								precision *= 10;
-								precision += (localBuff[x] - '0');
-								
-							}
-							
-							break;
-					}
-					x++;
-				}
-				while (localBuff[x] != '\n');
-				
-				if (precision < target_precision)
-					precision_reached = true;
-				
-			}
-			
-			nmea_msg_rcvd = 0;
-		}
-		
-	}
-	
+void GPS_GetPrecision(uint8_t target_precision) {
+
+    bool precision_reached = false;
+    while (!precision_reached) {
+
+        if (nmea_msg_rcvd) {
+            INT_Disable();
+            memcpy(localBuff, nmea_buffer, 256);
+            INT_Enable();
+
+            uint8_t precision = 0;
+            uint8_t msg_type[6];
+
+            memcpy(msg_type, &localBuff[1], 5);
+
+            msg_type[5] = 0;
+
+            char *msg_req_type = "GPGSA";
+
+            if (strcmp((char*) msg_type, msg_req_type) == 0) {
+
+                int commas = 0;
+                int x = 0;
+                uint8_t decimal_places = 0xFF;
+
+                do {
+                    if (localBuff[x] == ',') {
+                        commas++;
+                        x++;
+                        continue;
+                    }
+                    switch (commas) {
+                        case 15:
+
+                            if (decimal_places != 0xFF) {
+                                decimal_places += 1;
+                                if (decimal_places > 1) {
+                                    break;
+                                }
+                            }
+
+                            if (localBuff[x] == '.') {
+                                decimal_places = 0;
+
+                            } else {
+                                precision *= 10;
+                                precision += (localBuff[x] - '0');
+
+                            }
+
+                            break;
+                    }
+                    x++;
+                } while (localBuff[x] != '\n');
+
+                if (precision < target_precision)
+                    precision_reached = true;
+
+            }
+
+            nmea_msg_rcvd = 0;
+        }
+
+    }
+
 }
 
 /**
@@ -281,133 +361,126 @@ void GPS_GetPrecision(uint8_t target_precision)
  * only call after calling GPS_GetFix
  */
 void GPS_Read(GPS_Vector_Type *vector) {
-    int gotLocation = 0;
-    while (gotLocation == 0) {
-        if (nmea_msg_rcvd) {
-
-            if (fix == 1) {
-                INT_Disable();
-                memcpy(localBuff, nmea_buffer, 256);
-                INT_Enable();
-                //we have a fix so get coords
-                //parse data to get gps coords
-                //checking gga messages
-                if (localBuff[1] == 'G' && localBuff[3] == 'G' && localBuff[4] == 'G') {
-                    //counter for number of commas (used for parsing)
-                    gotLocation = 1;
-                    int commas = 0;
-                    int x = 0;
-                    //north/south indicator
-                    int north = 1;
-                    //east/west indicator
-                    int east = 1;
-                    //
-                    int altCount = 0;
-                    uint8_t longBuff[11] = "dddmm.mmmm";
-                    uint8_t latBuff[10] = "ddmm.mmmm";
-                    uint8_t altBuffer[16] = "";
-                    
-                    //variables used for counting lat/long into buffer
-                    int start, bufCount;
-                    do {
-                        //count which argument we are at
-                        if (localBuff[x] == ',') {
-                            commas++;
-                            x++;
-                            continue;
-                        }
-                        switch (commas) {
-                            case 2:
-                                //long
-                                start = x;
-                                bufCount = 0;
-                                //read longitude into buffer
-                                while (x < (start + 8)) {
-                                    latBuff[bufCount] = localBuff[x];
-                                    bufCount++;
-                                    x++;
-                                }
-                                latBuff[bufCount] = localBuff[x];
-                                break;
-                            case 3:
-                                //n/s
-
-                                if (localBuff[x] == 'S')
-                                    north = -1;
-                                break;
-                            case 4:
-                                //long
-                                start = x;
-                                bufCount = 0;
-                                //read longitude into buffer
-                                while (x < (start + 9)) {
-                                    longBuff[bufCount] = localBuff[x];
-                                    bufCount++;
-                                    x++;
-                                }
-                                longBuff[bufCount] = localBuff[x];
-                                break;
-                            case 5:
-                                //e/w
-                                if (localBuff[x] == 'W')
-                                    east = -1;
-                                break;
-                            case 6:
-                                //fix indicator
-                                if ((localBuff[x]) == '0') {
-                                    TRACE("FIX LOST");
-                                    //need to do something here
-                                    fix = 0;
-                                }
-                                break;
-                            case 9:
-                                //altitude with 1 decimal place
-                                if (localBuff[x]!='.'){
-                                    altBuffer[altCount] = localBuff[x];
-                                    
-                                }
-                                altCount++;
-                                
-
-                        }
-                        
-
-
-                        x++;
-                    } while (localBuff[x] != '\n');
-                    //print the long and latitude
-                    //                    TRACE("\n");
-                    //                    TRACE("long : ");
-                    //                    TRACE(longBuff);
-                    //                    TRACE("\n");
-                    //                    TRACE("lat : ");
-                    //                    TRACE(latBuff);
-                    //                    TRACE("\n");
-
-
-                    //convert to integers
-                    longBuff[5] = "\0";
-                    latBuff[4] = "\0";
-                    altBuffer[altCount] = "\0";
-                    short altit = atoi(altBuffer);
-                    TRACE("alt : %i ", altit );
-                    
-                    int32_t longitude = 10000 * atoi(longBuff);
-                    longitude += atoi(&longBuff[6]);
-                    longitude = longitude*east;
-                    int32_t latitude = 10000 * atoi(latBuff);
-                    latitude += atoi(&latBuff[5]);
-                    latitude = latitude*north;
-                    
-                    vector->alt = altit;
-                    vector->lat = latitude;
-                    vector->lon = longitude;
-                    //replace this later
-                    vector->alt = 0;
-                }
-            }
+    if (nmea_msg_rcvd) {
+        if (fix == 1) {
+            INT_Disable();
+            memcpy(localBuff, nmea_buffer, 256);
             nmea_msg_rcvd = 0;
+            INT_Enable();    
+            //we have a fix so get coords
+            //parse data to get gps coords
+            //checking gga messages
+            if (localBuff[1] == 'G' && localBuff[3] == 'G' && localBuff[4] == 'G') {
+                //counter for number of commas (used for parsing)
+                int commas = 0;
+                int x = 0;
+                //north/south indicator
+                int north = 1;
+                //east/west indicator
+                int east = 1;
+                //
+                int altCount = 0;
+                uint8_t longBuff[11] = "dddmm.mmmm";
+                uint8_t latBuff[10] = "ddmm.mmmm";
+                uint8_t altBuffer[16] = "";
+
+                //variables used for counting lat/long into buffer
+                int start, bufCount;
+                do {
+                    //count which argument we are at
+                    if (localBuff[x] == ',') {
+                        commas++;
+                        x++;
+                        continue;
+                    }
+                    switch (commas) {
+                        case 2:
+                            //long
+                            start = x;
+                            bufCount = 0;
+                            //read longitude into buffer
+                            while (x < (start + 8)) {
+                                latBuff[bufCount] = localBuff[x];
+                                bufCount++;
+                                x++;
+                            }
+                            latBuff[bufCount] = localBuff[x];
+                            break;
+                        case 3:
+                            //n/s
+
+                            if (localBuff[x] == 'S')
+                                north = -1;
+                            break;
+                        case 4:
+                            //long
+                            start = x;
+                            bufCount = 0;
+                            //read longitude into buffer
+                            while (x < (start + 9)) {
+                                longBuff[bufCount] = localBuff[x];
+                                bufCount++;
+                                x++;
+                            }
+                            longBuff[bufCount] = localBuff[x];
+                            break;
+                        case 5:
+                            //e/w
+                            if (localBuff[x] == 'W')
+                                east = -1;
+                            break;
+                        case 6:
+                            //fix indicator
+                            if ((localBuff[x]) == '0') {
+                                TRACE("FIX LOST");
+                                //need to do something here
+                                fix = 0;
+                            }
+                            break;
+                        case 9:
+                            //altitude with 1 decimal place
+                            if (localBuff[x] != '.') {
+                                altBuffer[altCount] = localBuff[x];
+                                altCount++;
+                            }
+
+
+
+                    }
+
+
+
+                    x++;
+                } while (localBuff[x] != '\n');
+
+
+                //convert to integers
+                longBuff[5] = "\0";
+                latBuff[4] = "\0";
+                altBuffer[altCount] = "\0";
+                short altit = (short) atoi(altBuffer);
+
+                int32_t longitude = 10000 * atoi(longBuff);
+                longitude += atoi(&longBuff[6]);
+                longitude = longitude*east;
+                int32_t latitude = 10000 * atoi(latBuff);
+                latitude += atoi(&latBuff[5]);
+                latitude = latitude*north;
+
+                lastRead->alt = altit;
+                lastRead->lat = latitude;
+                lastRead->lon = longitude;
+            }
+
 
         }
     }
+    
+
+
+    vector->alt = lastRead->alt;
+    vector->lat = lastRead->lat;
+    vector->lon = lastRead->lon;
+
 }
+
