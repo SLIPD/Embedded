@@ -151,6 +151,7 @@ void DISPLAY_heading(float heading, float goal)
 		}
 	}
         
+        DISPLAY_direction(direction);
         
 }
 
