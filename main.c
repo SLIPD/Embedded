@@ -174,7 +174,7 @@ int main()
 		RADIO_HandleMessages();
 		
 		// display update
-    //DISPLAY_Update();
+    DISPLAY_Update();
                 
 		// gps update
    
@@ -190,14 +190,14 @@ void enableInterrupts()
 	NVIC_EnableIRQ(GPIO_EVEN_IRQn);
 	NVIC_SetPriority(GPIO_EVEN_IRQn, 6);
 	
-	//NVIC_EnableIRQ(TIMER0_IRQn);
+	NVIC_EnableIRQ(TIMER0_IRQn);
 	NVIC_EnableIRQ(TIMER1_IRQn);
-	//NVIC_EnableIRQ(TIMER2_IRQn);
-	//NVIC_EnableIRQ(TIMER3_IRQn);
-	//NVIC_SetPriority(TIMER0_IRQn, 4);
+	NVIC_EnableIRQ(TIMER2_IRQn);
+	NVIC_EnableIRQ(TIMER3_IRQn);
+	NVIC_SetPriority(TIMER0_IRQn, 4);
 	NVIC_SetPriority(TIMER1_IRQn, 4);
-	//NVIC_SetPriority(TIMER2_IRQn, 4);
-	//NVIC_SetPriority(TIMER3_IRQn, 4);
+	NVIC_SetPriority(TIMER2_IRQn, 4);
+	NVIC_SetPriority(TIMER3_IRQn, 4);
 
 	NVIC_EnableIRQ(USART2_TX_IRQn);
 	NVIC_EnableIRQ(USART2_RX_IRQn);
