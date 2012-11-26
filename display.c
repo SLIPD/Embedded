@@ -93,35 +93,66 @@ void DISPLAY_direction(uint8_t direction)
 
 // heading is direction speck is facing
 // goal is the destination heading
-void DISPLAY_heading(float heading)
+// direction {0, 1, 2, 3, 4}
+// 0 go hard right
+// 1 go right
+// 2 go straight
+// 3 go left
+// 4 go hard left
+void DISPLAY_heading(float heading, float goal)
 {
-//    char str[32];
-//    sprintf(str, "heading %.3f\n", heading);
-//    TRACE(str);
-    if((heading >= 345.0 && heading <= 360.0) || (heading >=  0 && heading <= 15))
-    {
-        DISPLAY_direction(FORWARD);
-    }   
-    else if((heading >= 270.0 && heading < 345.0))
-    {
-        DISPLAY_direction(TURN_RIGHT);
-    } 
-    else if((heading >= 180.0 && heading < 270.0))
-    {
-        DISPLAY_direction(TURN__RIGHT);
-    } 
-    else if((heading > 15.0 && heading <= 90.0))
-    {
-        DISPLAY_direction(TURN_LEFT);
-    } 
-    else if((heading > 90.0 && heading < 180.0))
-    {
-        DISPLAY_direction(TURN__LEFT);
-    } 
-    else
-    {
-        DISPLAY_direction(BAD_HEADING);
-    }
+	// local variables
+	float delta = 0;
+	int direction = BAD_HEADING;
+	
+	// get delta, difference of degrees
+	if (goal > heading) 
+	{
+		delta = goal - heading;
+		direction = TURN_RIGHT; // go right
+	}
+	else
+	{
+		delta = heading - goal;
+		direction = TURN_LEFT; // go left
+	}
+	
+	
+	// Get other direction
+	if (delta > 180.0)
+	{
+		// invert directions
+		if(direction == TURN_RIGHT)
+		{
+			direction = TURN_LEFT; // go left
+		} 
+		else
+		{
+			direction = TURN_RIGHT; // go right
+		}
+		
+		delta = fabs(delta-360);
+	}
+	
+	// find direction
+	if (delta < 10)
+	{
+		direction = FORWARD;
+	}
+	else if(delta > 90)
+	{
+		if(direction == TURN_RIGHT)
+		{
+			direction = TURN__RIGHT; // go hard right
+		}
+		else
+		{
+			direction = TURN__LEFT; // go hard left
+		}
+	}
+        
+        DISPLAY_direction(direction);
+        
 }
 
 // Screen built in functions

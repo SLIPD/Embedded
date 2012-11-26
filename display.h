@@ -34,7 +34,7 @@ typedef struct
 
 /* prototypes */
 void DISPLAY_direction(uint8_t dir);
-void DISPLAY_heading(float heading);
+void DISPLAY_heading(float heading, float goal);
 
 void DISPLAY_clearScreen();
 void DISPLAY_returnHome();
