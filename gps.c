@@ -89,9 +89,9 @@ void GPS_Init() {
         TRACE("SWITCHING MODE");
         switchMode();
     }
-    TRACE("ENABLING GPS INTERRUPT");
-    NVIC_EnableIRQ(LEUART1_IRQn);
-    TRACE("GPS INIT COMPLETE");
+    TRACE("ENABLING GPS INTERRUPT\n");
+    
+    TRACE("GPS INIT COMPLETE\n");
 
 
 }
@@ -142,16 +142,19 @@ void LEUART1_IRQHandler(void) {
     if (b == '$') {
         nmea_len = 0;
     }
-    if (nmea_len >= 254) {
+    if (nmea_len >= 253) {
         nmea_len = 0;
     }
+		
     nmea_buffer[nmea_len++] = b;
-    //send it to bypass problems with trace...
     
-    UART1->TXDATA = b;
+    //send it to bypass problems with trace...
+    //UART1->TXDATA = b;
     
     if (b == '\n') {
-        nmea_msg_rcvd = 1;
+			nmea_buffer[nmea_len++] = '\0';
+			//TRACE(nmea_buffer);
+      nmea_msg_rcvd = 1;
     }
 }
 
@@ -185,8 +188,7 @@ void GPS_GetFix() {
                 }
 
             }
-
-
+						TRACE(localBuff);
             nmea_msg_rcvd = 0;
 
         }

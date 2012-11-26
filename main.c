@@ -80,7 +80,7 @@ int main()
 	initClocks();
              
 	// I2C setup
-	I2C_Setup();
+	//I2C_Setup();
 
 	TRACE_Init();
 	TRACE("Trace started!\n");
@@ -128,6 +128,7 @@ int main()
 	// display getting fix message
 	*/
 	// magnetometer init
+	/*
 	MAGInit(); 
 	magReading.x = MAGReadX_16();
 	magReading.y = MAGReadY_16();
@@ -138,9 +139,9 @@ int main()
 	accelReading.x =  MMAReadX_14();
 	accelReading.y =  MMAReadY_14();
 	accelReading.z =  MMAReadZ_14();
-        
-        // eCompass init
-//        eCompassInit();
+	*/
+	// eCompass init
+	//eCompassInit();
   
 	// radio init
 	RADIO_Init();
@@ -191,15 +192,20 @@ void enableInterrupts()
 	
 	NVIC_EnableIRQ(TIMER0_IRQn);
 	NVIC_EnableIRQ(TIMER1_IRQn);
+	NVIC_EnableIRQ(TIMER2_IRQn);
 	NVIC_EnableIRQ(TIMER3_IRQn);
 	NVIC_SetPriority(TIMER0_IRQn, 4);
 	NVIC_SetPriority(TIMER1_IRQn, 4);
+	NVIC_SetPriority(TIMER2_IRQn, 4);
 	NVIC_SetPriority(TIMER3_IRQn, 4);
 
 	NVIC_EnableIRQ(USART2_TX_IRQn);
 	NVIC_EnableIRQ(USART2_RX_IRQn);
 	NVIC_SetPriority(USART2_TX_IRQn, 5);
 	NVIC_SetPriority(USART2_RX_IRQn, 5);
+	
+	NVIC_EnableIRQ(LEUART1_IRQn);
+	NVIC_SetPriority(LEUART1_IRQn, 3);
 	
 	#ifndef BASESTATION
 		
@@ -253,6 +259,7 @@ void initClocks()
 	// enable timers
 	CMU_ClockEnable(cmuClock_TIMER0, true);
 	CMU_ClockEnable(cmuClock_TIMER1, true);
+	CMU_ClockEnable(cmuClock_TIMER2, true);
 	CMU_ClockEnable(cmuClock_TIMER3, true);
 	
 	// i2c

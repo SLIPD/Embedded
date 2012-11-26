@@ -17,8 +17,8 @@
 #include "queue.h"
 
 /* variables */
-#define TRACE_BUF_SIZE 1024
-uint8_t trace_buf[TRACE_BUF_SIZE],
+#define TRACE_BUF_SIZE 2048
+static uint8_t trace_buf[TRACE_BUF_SIZE],
 	trace_writePosition = 0,
 	trace_readPosition = 0;
 
@@ -64,16 +64,16 @@ void TRACE(char *format, ...)
 {
 	
 	#ifndef BASESTATION
-	
-		char msg[255];
-		memset(msg,0,255);
+		
+		INT_Disable();
+		
+		char msg[512];
 		
 		va_list args;
 		va_start( args, format );
 		vsprintf(msg, format, args );
 		va_end( args );
 		
-		INT_Disable();
 		int i;
 		for (i = 0; i < strlen(msg); i++)
 		{
@@ -82,9 +82,10 @@ void TRACE(char *format, ...)
 			while (!(UART1->STATUS & UART_STATUS_TXBL));
 			UART1->TXDATA = msg[i];
 		}
-		INT_Enable();
 		
 		//USART_IntEnable(UART1, UART_IF_TXBL);
+		
+		INT_Enable();
 		
 	#endif
 	
