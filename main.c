@@ -63,19 +63,19 @@ void wait(uint32_t ms)
 			while (RTC_CounterGet() < time + ((double)ms / 1000.0) * clockFreq);
 			break;
 		}
-		
+
 	}
 }
 
 int main()
 {
-	
+
 	// Chip errata
 	CHIP_Init();
-	
+
 	// ensure core frequency has been updated
 	SystemCoreClockUpdate();
-	
+
 	// start clocks
 	initClocks();
              
@@ -87,37 +87,37 @@ int main()
         
 	// init LEDs
 	LED_Init();
-	
+
 	#ifdef PPS_MASTER
-	
+
 	GPIO_PinModeSet(gpioPortD, 10, gpioModePushPull, 0);
-	
+
 	do
 	{
-		
+
 		LED_On(GREEN);
 		GPIO_PinOutSet(gpioPortD, 10);
 		wait(200);
 		LED_Off(GREEN);
 		GPIO_PinOutClear(gpioPortD, 10);
 		wait(800);
-		
+
 	}
 	while(1);
-	
+
 	#endif
-	
+
 	// init irqs
 	enableInterrupts();
-	
+
 	// GPS Init
 	GPS_Init();
-	
+
 	// enable basestation if reqd
 	#ifdef BASESTATION
-		
+
 		basestation_main();
-		
+
 	#endif
 	/*
 	// Display init
@@ -128,7 +128,7 @@ int main()
 	// display getting fix message
 	*/
 	// magnetometer init
-	
+
 	MAGInit(); 
 	magReading.x = MAGReadX_16();
 	magReading.y = MAGReadY_16();
@@ -139,36 +139,36 @@ int main()
 	accelReading.x =  MMAReadX_14();
 	accelReading.y =  MMAReadY_14();
 	accelReading.z =  MMAReadZ_14();
-	
+
 	// eCompass init
 	//eCompassInit();
   
 	// radio init
 	RADIO_Init();
-	
+
 	// radio get id
 	RADIO_GetID();
-	
+
 	// wait for gps initial fix
 	GPS_GetFix();
-	
+
 	LED_Off(RED);
-	
+
 	TRACE(":FIX FOUND\n");
-	
+
 	// enable tdma
 	RADIO_EnableTDMA();
-	
+
 	Packet p;
-	
+
 	LED_On(RED);
-	
+
 	while(1)
 	{
-		
+
 		// handle radio msgs
 		RADIO_HandleMessages();
-		
+
 		if (RADIO_Recv((uint8_t*)&p))
 		{
 			if (p.msgType == 0x03 && p.payload.message.message[0] == 0x01)
@@ -180,24 +180,24 @@ int main()
 				LED_Toggle(RED);
 			}
 		}
-		
+
 		// display update
     //DISPLAY_Update();
                 
 		// gps update
    
 		// sleep until irq
-		
+
 	}
-	
+
 }
 
 void enableInterrupts()
 {
-	
+
 	NVIC_EnableIRQ(GPIO_EVEN_IRQn);
 	NVIC_SetPriority(GPIO_EVEN_IRQn, 6);
-	
+
 	NVIC_EnableIRQ(TIMER0_IRQn);
 	NVIC_EnableIRQ(TIMER1_IRQn);
 	NVIC_EnableIRQ(TIMER2_IRQn);
@@ -211,22 +211,22 @@ void enableInterrupts()
 	NVIC_EnableIRQ(USART2_RX_IRQn);
 	NVIC_SetPriority(USART2_TX_IRQn, 5);
 	NVIC_SetPriority(USART2_RX_IRQn, 5);
-	
+
 	NVIC_EnableIRQ(LEUART1_IRQn);
 	NVIC_SetPriority(LEUART1_IRQn, 3);
-	
+
 	#ifndef BASESTATION
-		
+
 		NVIC_EnableIRQ(UART1_TX_IRQn);
 		NVIC_SetPriority(UART1_TX_IRQn, 5);
-		
+
 	#endif
-	
+
 }
 
 void initClocks()
 {
-	
+
 	/* Starting LFXO and waiting until it is stable */
 	CMU_OscillatorEnable(cmuOsc_LFXO, true, true);
 
@@ -263,17 +263,17 @@ void initClocks()
   
 	// enable pc serial
 	CMU_ClockEnable(cmuClock_UART1, true);
-	
+
 	// enable timers
 	CMU_ClockEnable(cmuClock_TIMER0, true);
 	CMU_ClockEnable(cmuClock_TIMER1, true);
 	CMU_ClockEnable(cmuClock_TIMER2, true);
 	CMU_ClockEnable(cmuClock_TIMER3, true);
-	
+
 	// i2c
 	CMU_ClockEnable(cmuClock_I2C0, true);
-	
+
 	// LEUART for GPS
 	CMU_ClockEnable(cmuClock_LEUART1, true);
-	
+
 }

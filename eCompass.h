@@ -24,11 +24,7 @@ extern "C" {
 // prototypes
     
     void eCompassInit();
-    int16_t iTrig(int16_t ix, int16_t iy);
-    int16_t iHundredAtan2Deg(int16_t iy, int16_t ix);
-    int16_t iHundredAtanDeg(int16_t iy, int16_t ix);
-    int16_t iDivide(int16_t iy, int16_t ix);
-    int16_t ieCompass(int16_t magX, int16_t magY, int16_t magZ, int16_t accelX, int16_t accelY, int16_t accelZ);
+    float ieCompass(int16_t x, int16_t y);
 
 
 #ifdef	__cplusplus

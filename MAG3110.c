@@ -93,17 +93,6 @@ uint8_t MAGRegRead(uint8_t reg)
     return data[0];
 }
 
-void MAGRegReadN(uint8_t reg1, uint8_t n, uint8_t *array)
-{
-    // I2CO                 - base pointer 
-    // MAG3110_ADDR_READ    - MAG3110 read address
-    // reg1                 - read this register on MAG
-    // array                - Array to read data into (data holder)
-    // n                    - Number of bytes to read
-
-    MAG_RegisterGet(I2C0, MAG3110_ADDR_READ, reg1, array, n);
-}
-
 int16_t MAGReadX_16()
 {
     uint8_t MSB_buf, LSB_buf;
@@ -167,27 +156,18 @@ void MAGActive(void)
 void MAGInit(void) 
 {
     MAGStandby();
-    // MAGRegWrite(0x2E, INT_EN_DRDY_MASK); //Set the interrupt to route to INT1
-    // MAGRegWrite(0x2E, INT_EN_DRDY_MASK); //Set the interrupt to route to INT1
     
-    // Reset offset regs
-    MAGRegWrite(MAG_OFF_X_MSB, 0x00);
-    MAGRegWrite(MAG_OFF_X_LSB, 0x00);
-    MAGRegWrite(MAG_OFF_Y_MSB, 0x00);
-    MAGRegWrite(MAG_OFF_Y_LSB, 0x00);
-    MAGRegWrite(MAG_OFF_Z_MSB, 0x00);
-    MAGRegWrite(MAG_OFF_Z_LSB, 0x00);
-    
-    // CTRL_REG2
-    MAGRegWrite(MAG_CTRL_REG2, (MAGRegRead(MAG_CTRL_REG2) | MAG_AUTO_MRST_MASK )); // Activate automatic magnetic sensor resets
-    MAGRegWrite(MAG_CTRL_REG2, (MAGRegRead(MAG_CTRL_REG2) | MAG_RAW_MASK )); // Activate raw mode
-    
-    // CTRL_REG1
-    MAGRegWrite(MAG_CTRL_REG1, (MAGRegRead(MAG_CTRL_REG1) & ~MAG_ODR_MASK)); // Active ODR, 80Hz
-    MAGRegWrite(MAG_CTRL_REG1, (MAGRegRead(MAG_CTRL_REG1) & ~MAG_OS_MASK)); // Active OS, 1
-    MAGRegWrite(MAG_CTRL_REG1, (MAGRegRead(MAG_CTRL_REG1) & ~MAG_FR_MASK)); // Deactivate Fast Read
-    MAGRegWrite(MAG_CTRL_REG1, (MAGRegRead(MAG_CTRL_REG1) & ~MAG_TM_MASK)); // Deactivate Trigger Measurement
+    MAGRegWrite(MAG_CTRL_REG2, 0xA0);
+    MAGRegWrite(MAG_CTRL_REG1, 0x01);
     
     MAGActive();  
 }              
 
+Mag_Vector_Type getMAGReadings()
+{
+    Mag_Vector_Type magReading;
+    magReading.x = MAGReadX_16();
+    magReading.y = MAGReadY_16();
+    magReading.z = MAGReadZ_16();
+    return magReading;
+}
