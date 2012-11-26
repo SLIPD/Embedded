@@ -79,7 +79,7 @@ void GPIO_EVEN_IRQHandler()
 	if (GPIO_IntGet() & (1 << NRF_INT_PIN))
 	{
 		
-		TRACE("%i: RADIO IRQ\n", TIMER_CounterGet(TIMER1));
+		//TRACE("%i: RADIO IRQ\n", TIMER_CounterGet(TIMER1));
 		if (USART_Ready())
 		{
 			radio_irq_flags = radio_readRegister(NRF_STATUS);
@@ -176,7 +176,7 @@ void radio_cs(USART_ChipSelect set)
 void RADIO_SetMode(RADIO_Mode rm)
 {
 	
-	TRACE("%i: RADIO_SetMode(): set mode to: 0x%2.2X\n", TIMER_CounterGet(TIMER1), rm);
+	//TRACE("%i: RADIO_SetMode(): set mode to: 0x%2.2X\n", TIMER_CounterGet(TIMER1), rm);
 	
 	uint8_t cmd = NRF_FLUSH_RX;
 	USART2_Transfer(&cmd,1,radio_cs, NULL);
@@ -202,7 +202,7 @@ void RADIO_SetMode(RADIO_Mode rm)
 void RADIO_Enable(RADIO_Mode rm)
 {
 
-	TRACE("%i: RADIO_Enable(): enable: 0x%2.2X\n", TIMER_CounterGet(TIMER1), rm);
+	//TRACE("%i: RADIO_Enable(): enable: 0x%2.2X\n", TIMER_CounterGet(TIMER1), rm);
 
 	switch (rm)
 	{
@@ -306,7 +306,7 @@ void RADIO_SetAutoRefil(bool _auto_refil)
 void RADIO_TxBufferFill()
 {
 	
-	TRACE("%i: TX BUFFER FILL\n", TIMER_CounterGet(TIMER1));
+	//TRACE("%i: TX BUFFER FILL\n", TIMER_CounterGet(TIMER1));
 	
 	if (radio_readRegister(NRF_FIFO_STATUS) & 0x10)
 		send_in_progress = false;
@@ -324,7 +324,7 @@ void RADIO_TxBufferFill()
 			
 			send_in_progress = true;
 		}
-		TRACE("%i: RADIO_TxBufferFill(): %i packets uploaded\n",TIMER_CounterGet(TIMER1), i);
+		//TRACE("%i: RADIO_TxBufferFill(): %i packets uploaded\n",TIMER_CounterGet(TIMER1), i);
 		tx_packet_count += i;
 	}
 	else if ((!(radio_readRegister(NRF_FIFO_STATUS) & 0x20)) && (QUEUE_Read(&txBuffer,&payload[1])))
@@ -335,7 +335,7 @@ void RADIO_TxBufferFill()
 		
 		send_in_progress = true;
 		
-		TRACE("%i: RADIO_TxBufferFill(): 1 packet uploaded\n",TIMER_CounterGet(TIMER1));
+		//TRACE("%i: RADIO_TxBufferFill(): 1 packet uploaded\n",TIMER_CounterGet(TIMER1));
 		tx_packet_count++;
 	}
 	
@@ -397,7 +397,6 @@ void RADIO_GetID()
 			RADIO_SetMode(TX);
 			RADIO_Send((uint8_t*)&ident);
 			RADIO_TxBufferFill();
-			//for (int i = 0; i < 10000; i++);
 			RADIO_Enable(TX);
 			while(RADIO_Sending())
 			{
@@ -407,8 +406,9 @@ void RADIO_GetID()
 			RADIO_SetMode(RX);
 			RADIO_Enable(RX);
 			
-			if (next_send < RTC_CounterGet() + 32768)
-				next_send = RTC_CounterGet() + 32768;
+			TRACE("SENT IDENT REQ\n");
+			next_send = RTC_CounterGet() + 32768;
+			
 		}
 		
 		while (RADIO_Recv((uint8_t*)&incoming))
@@ -604,7 +604,7 @@ void RADIO_EnableTDMA()
 void RADIOTIMER_IRQHandler()
 {
 	
-	TRACE(":SCHDLR\n");
+	//TRACE(":SCHDLR\n");
 	
 	uint32_t flags = TIMER_IntGet(RADIO_TIMER);
 	
@@ -622,7 +622,7 @@ void RADIOTIMER_IRQHandler()
 void PPSTIMER_IRQHandler()
 {
 	
-	TRACE(":PPS\n");
+	//TRACE(":PPS\n");
 	
 	if (TIMER_IntGet(PPS_TIMER) & PPS_TIMER_IRQ)
 	{
@@ -653,12 +653,12 @@ void radio_config_cc(TIMER_TypeDef *timer, uint8_t cc, uint32_t time, bool set)
 	if (set)
 	{
 		timerCCInit.cmoa = timerOutputActionSet;
-		TRACE("%i: SET @ %i\n", TIMER_CounterGet(TIMER1), time);
+		//TRACE("%i: SET @ %i\n", TIMER_CounterGet(TIMER1), time);
 	}
 	else
 	{
 		timerCCInit.cmoa = timerOutputActionClear;
-		TRACE("%i: CLEAR @ %i\n", TIMER_CounterGet(TIMER1), time);
+		//TRACE("%i: CLEAR @ %i\n", TIMER_CounterGet(TIMER1), time);
 	}
 	
 	TIMER_CompareSet(timer,cc, time);
@@ -712,7 +712,7 @@ void RADIO_HandleMessages()
 	
 	if (tdma_stage_flags & (1 << 0))
 	{
-		TRACE("%i: STAGE 1 - RX EN\n", TIMER_CounterGet(TIMER1));
+		//TRACE("%i: STAGE 1 - RX EN\n", TIMER_CounterGet(TIMER1));
 		radio_config_cc(RADIO_TIMER, NRF_CE_TIMER_CC, node_id * tdma_sp, false);
 		
 		RADIO_Enable(RXAMP);
@@ -720,7 +720,7 @@ void RADIO_HandleMessages()
 	}
 	if (tdma_stage_flags & (1 << 1))
 	{
-		TRACE("%i: STAGE 2 - CONF TX, FILL FIFO\n", TIMER_CounterGet(TIMER1));
+		//TRACE("%i: STAGE 2 - CONF TX, FILL FIFO\n", TIMER_CounterGet(TIMER1));
 		radio_config_cc(RADIO_TIMER, NRF_CE_TIMER_CC, node_id * tdma_sp + tdma_gp, true);
 		
 		RADIO_Enable(OFF);
@@ -735,18 +735,18 @@ void RADIO_HandleMessages()
 	}
 	if (tdma_stage_flags & (1 << 2))
 	{
-		TRACE("%i: STAGE 3\n", TIMER_CounterGet(TIMER1));
+		//TRACE("%i: STAGE 3\n", TIMER_CounterGet(TIMER1));
 		radio_config_cc(RADIO_TIMER, NRF_CE_TIMER_CC, node_id * tdma_sp + tdma_gp + tdma_txp, false);
 		tdma_stage_flags &= ~(1 << 2);
 	}
 	if (tdma_stage_flags & (1 << 3))
 	{
-		TRACE("%i: STAGE 4 - AUTO REFIL = FALSE\n", TIMER_CounterGet(TIMER1));
+		//TRACE("%i: STAGE 4 - AUTO REFIL = FALSE\n", TIMER_CounterGet(TIMER1));
 		tdma_stage_flags &= ~(1 << 3);
 	}
 	if (tdma_stage_flags & (1 << 4))
 	{
-		TRACE("%i: STAGE 5 - CONF RX\n", TIMER_CounterGet(TIMER1));
+		//TRACE("%i: STAGE 5 - CONF RX\n", TIMER_CounterGet(TIMER1));
 		radio_config_cc(RADIO_TIMER, NRF_CE_TIMER_CC, (node_id + 1) * tdma_sp, true);
 		TRACE("%i packets sent, last TX %i\n", tx_packet_count, last_tx);
 		RADIO_SetMode(RX);
@@ -754,14 +754,14 @@ void RADIO_HandleMessages()
 	}
 	if (tdma_stage_flags & (1 << 5))
 	{
-		TRACE("%i: STAGE 6 - ENABLE RX\n", TIMER_CounterGet(TIMER1));
+		//TRACE("%i: STAGE 6 - ENABLE RX\n", TIMER_CounterGet(TIMER1));
 		radio_config_cc(RADIO_TIMER, NRF_CE_TIMER_CC, tdma_p, false);
 		RADIO_Enable(RXAMP);
 		tdma_stage_flags &= ~(1 << 5);
 	}
 	if (tdma_stage_flags & (1 << 6))
 	{
-		TRACE("%i: STAGE 7 - DISABLE\n", TIMER_CounterGet(TIMER1));
+		//TRACE("%i: STAGE 7 - DISABLE\n", TIMER_CounterGet(TIMER1));
 		radio_config_cc(RADIO_TIMER, NRF_CE_TIMER_CC, 0, true);
 		RADIO_Enable(OFF);
 		RADIO_SetMode(OFF);
@@ -769,7 +769,7 @@ void RADIO_HandleMessages()
 	}
 	if (tdma_stage_flags & (1 << 7))
 	{
-		TRACE("%i: STAGE 8 - CONF RX\n", TIMER_CounterGet(TIMER1));
+		//TRACE("%i: STAGE 8 - CONF RX\n", TIMER_CounterGet(TIMER1));
 		RADIO_SetMode(RX);
 		tdma_stage_flags &= ~(1 << 7);
 	}
@@ -791,7 +791,7 @@ void RADIO_HandleMessages()
 		{
 			NRF_CE_lo;
 			
-			TRACE("%i: radio_interrupt_rt() : TX\n", TIMER_CounterGet(TIMER1));
+			//TRACE("%i: radio_interrupt_rt() : TX\n", TIMER_CounterGet(TIMER1));
 			last_tx = TIMER_CounterGet(TIMER1);
 			
 			if (radio_readRegister(NRF_FIFO_STATUS) & 0x10)
@@ -810,7 +810,7 @@ void RADIO_HandleMessages()
 					
 					send_in_progress = true;
 				}
-				TRACE("%i: RADIO_TxBufferFill(): %i packets uploaded\n",TIMER_CounterGet(TIMER1), i);
+				//TRACE("%i: RADIO_TxBufferFill(): %i packets uploaded\n",TIMER_CounterGet(TIMER1), i);
 				tx_packet_count += i;
 			}
 			else if (auto_refil && (!(radio_readRegister(NRF_FIFO_STATUS) & 0x20)) && (QUEUE_Read(&txBuffer,&payload[1])))
@@ -821,7 +821,7 @@ void RADIO_HandleMessages()
 				
 				send_in_progress = true;
 				
-				TRACE("%i: RADIO_TxBufferFill(): 1 packet uploaded\n",TIMER_CounterGet(TIMER1));
+				//TRACE("%i: RADIO_TxBufferFill(): 1 packet uploaded\n",TIMER_CounterGet(TIMER1));
 				tx_packet_count++;
 			}
 			
@@ -833,7 +833,7 @@ void RADIO_HandleMessages()
 		if (status & 0x40)
 		{
 			
-			TRACE("%i: radio_interrupt_rt() : RX\n", TIMER_CounterGet(TIMER1));
+			//TRACE("%i: radio_interrupt_rt() : RX\n", TIMER_CounterGet(TIMER1));
 			
 			uint8_t payload[33],
 				fifo_status = radio_readRegister(NRF_FIFO_STATUS);
