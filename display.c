@@ -40,7 +40,7 @@ bool displayUpdateRequired = false;
 // dir: 2 straight
 // dir: 3 soft right
 // dir: 4 hard right
-void DISPLAY_dir(uint8_t dir)
+void DISPLAY_direction(uint8_t direction)
 {
     // Clear top line
     char blank[16];
@@ -52,7 +52,7 @@ void DISPLAY_dir(uint8_t dir)
     char *str;
     
     // Set direction 
-    switch(dir)
+    switch(direction)
     {
         case 0:
             str = HARD_LEFT;
@@ -73,19 +73,52 @@ void DISPLAY_dir(uint8_t dir)
         case 4:
             str = HARD_RIGHT;
             break;
-            
+        case 5:
+            str ="LOLLOLLOLLOLLOL";   
+            break;
         default:
             break;
     }
      
     // Set line1 attributes
-    if (dir >= 0 && dir <= 5)
+    if (direction >= 0 && direction <= 5)
     {
             line1.enabled = true;
             line1.scroll = false;
             line1.message = str;
             line1.length = 15;
             displayUpdateRequired = true;
+    }
+}
+
+void DISPLAY_heading(float heading)
+{
+//    char str[32];
+//    sprintf(str, "heading %.3f\n", heading);
+//    TRACE(str);
+    if((heading >= 345.0 && heading <= 360.0) || (heading >=  0 && heading <= 15))
+    {
+        DISPLAY_direction(2);
+    }   
+    else if((heading >= 300.0 && heading < 345.0))
+    {
+        DISPLAY_direction(3);
+    } 
+    else if((heading > 15.0 && heading <= 60.0))
+    {
+        DISPLAY_direction(1);
+    } 
+    else if((heading >= 270.0 && heading < 300.0))
+    {
+        DISPLAY_direction(4);
+    } 
+    else if((heading > 60.0 && heading < 90.0))
+    {
+        DISPLAY_direction(0);
+    } 
+    else
+    {
+        DISPLAY_direction(5);
     }
 }
 

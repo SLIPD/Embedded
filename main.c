@@ -34,7 +34,7 @@ DISPLAY_Message         displayMessageBottom;
 Mag_Vector_Type         magReading;
 Accel_Vector_Type       accelReading;
 uint8_t buf[6];
-char str[192];
+char str[32];
 
 // Prototypes
 void initClocks();
@@ -63,179 +63,162 @@ void wait(uint32_t ms)
 			while (RTC_CounterGet() < time + ((double)ms / 1000.0) * clockFreq);
 			break;
 		}
-		
+
 	}
 }
 
 int main()
 {
-	
+
 	// Chip errata
 	CHIP_Init();
-	
+
 	// ensure core frequency has been updated
 	SystemCoreClockUpdate();
-	
+
 	// start clocks
 	initClocks();
              
 	// I2C setup
-	I2C_Setup();
+	//I2C_Setup();
 
 	TRACE_Init();
 	TRACE("Trace started!\n");
         
 	// init LEDs
 	LED_Init();
-	
+
 	#ifdef PPS_MASTER
-	
+
 	GPIO_PinModeSet(gpioPortD, 10, gpioModePushPull, 0);
-	
+
 	do
 	{
-		
+
 		LED_On(GREEN);
 		GPIO_PinOutSet(gpioPortD, 10);
 		wait(200);
 		LED_Off(GREEN);
 		GPIO_PinOutClear(gpioPortD, 10);
 		wait(800);
-		
+
 	}
 	while(1);
-	
+
 	#endif
-	
+
 	// init irqs
 	enableInterrupts();
-	
+
 	// GPS Init
-//	GPS_Init();
-	
+	GPS_Init();
+
 	// enable basestation if reqd
 	#ifdef BASESTATION
-//		basestation_main();
-		
+
+		basestation_main();
+
 	#endif
+	/*
 	// Display init
 	DISPLAY_Init();
-        
-        // init top line
 	DISPLAY_InitMessage(&displayMessageTop);
-        
-        // init bottom line
 	DISPLAY_InitMessage(&displayMessageBottom);
-        displayMessageBottom.topLine = false;
-        
+
 	// display getting fix message
-        displayMessageTop.message = ("Getting Fix :)");
-        DISPLAY_MessageWrite(&displayMessageTop);
-	
+	*/
 	// magnetometer init
+	/*
 	MAGInit(); 
-        magReading = getMAGReadings();
+	magReading.x = MAGReadX_16();
+	magReading.y = MAGReadY_16();
+	magReading.z = MAGReadZ_16();
 
 	// accelerometer init
 	MMAInit();
-        accelReading = getMMAReadings();
-        
-        // eCompass init
-        eCompassInit();
+	accelReading.x =  MMAReadX_14();
+	accelReading.y =  MMAReadY_14();
+	accelReading.z =  MMAReadZ_14();
+	*/
+	// eCompass init
+	//eCompassInit();
   
 	// radio init
-//	RADIO_Init();
-	
+	RADIO_Init();
+
 	// radio get id
 	//RADIO_GetID();
-	
+
 	// wait for gps initial fix
-//	GPS_GetFix();
-	
-//	TRACE(":FIX FOUND\n");
-	
+	GPS_GetFix();
+
+	TRACE(":FIX FOUND\n");
+
 	// enable tdma
-//	RADIO_EnableTDMA();
-	
+	RADIO_EnableTDMA();
+
 	LED_On(RED);
 	LED_On(GREEN);
 	LED_On(BLUE);
-	
-//	while (1)
-//	{
-//		TRACE(":TDMA STARTED\n");
-//		for (int i = 0; i < 1000000; i++);
-//	}
-//	DISPLAY_dir(2);
+
+	while (1)
+	{
+		TRACE(":TDMA STARTED\n");
+		for (int i = 0; i < 1000000; i++);
+	}
+
 	while(1)
-	{       
-            
+	{
+
 		// handle radio msgs
-//		RADIO_HandleMessages();
-            
-                magReading = getMAGReadings();
-                accelReading = getMMAReadings();
-//                uint8_t yMSB =  MAGRegRead(MAG_OUT_Y_MSB_REG);
-//                uint8_t yLSB =  MAGRegRead(MAG_OUT_Y_LSB_REG);
-//                sprintf(str, "Y 0x%2.2x %2.2x\n", yMSB, yLSB);
-//                TRACE(str);
-                
-                sprintf(str, "ACCEL x %d, y %d, z %d\n", accelReading.x, accelReading.y, accelReading.z);
-                TRACE(str);
-//                sprintf(str, "MAG x %d, y %d, z %d\n", magReading.x, magReading.y, magReading.z);
-//                TRACE(str);
-                
-//                int16_t heading = ieCompass(magReading.x, magReading.y, magReading.z, accelReading.x, accelReading.y, accelReading.z);
-//                float heading = 0;
-//                heading = iCompass(magReading.x, magReading.y);
-//                sprintf(str, "Head %f", heading);
-//                TRACE(str);
-//                TRACE("\n");
-//                
-//                displayMessageBottom.message = (str);
-//                DISPLAY_MessageWrite(&displayMessageBottom);
-//		// display update
-//                DISPLAY_Update();
+		RADIO_HandleMessages();
+
+		// display update
+    DISPLAY_Update();
                 
 		// gps update
    
 		// sleep until irq
-		
-		for (int i = 0; i < 2000000; i++);
+
 	}
-	
+
 }
 
 void enableInterrupts()
 {
-	
+
 	NVIC_EnableIRQ(GPIO_EVEN_IRQn);
 	NVIC_SetPriority(GPIO_EVEN_IRQn, 6);
-	
+
 	NVIC_EnableIRQ(TIMER0_IRQn);
 	NVIC_EnableIRQ(TIMER1_IRQn);
+	NVIC_EnableIRQ(TIMER2_IRQn);
 	NVIC_EnableIRQ(TIMER3_IRQn);
 	NVIC_SetPriority(TIMER0_IRQn, 4);
 	NVIC_SetPriority(TIMER1_IRQn, 4);
+	NVIC_SetPriority(TIMER2_IRQn, 4);
 	NVIC_SetPriority(TIMER3_IRQn, 4);
 
 	NVIC_EnableIRQ(USART2_TX_IRQn);
 	NVIC_EnableIRQ(USART2_RX_IRQn);
 	NVIC_SetPriority(USART2_TX_IRQn, 5);
 	NVIC_SetPriority(USART2_RX_IRQn, 5);
-	
+
+	NVIC_EnableIRQ(LEUART1_IRQn);
+	NVIC_SetPriority(LEUART1_IRQn, 3);
+
 	#ifndef BASESTATION
-		
+
 		NVIC_EnableIRQ(UART1_TX_IRQn);
 		NVIC_SetPriority(UART1_TX_IRQn, 5);
-		
+
 	#endif
-	
+
 }
 
 void initClocks()
 {
-	
+
 	/* Starting LFXO and waiting until it is stable */
 	CMU_OscillatorEnable(cmuOsc_LFXO, true, true);
 
@@ -272,16 +255,17 @@ void initClocks()
   
 	// enable pc serial
 	CMU_ClockEnable(cmuClock_UART1, true);
-	
+
 	// enable timers
 	CMU_ClockEnable(cmuClock_TIMER0, true);
 	CMU_ClockEnable(cmuClock_TIMER1, true);
+	CMU_ClockEnable(cmuClock_TIMER2, true);
 	CMU_ClockEnable(cmuClock_TIMER3, true);
-	
+
 	// i2c
 	CMU_ClockEnable(cmuClock_I2C0, true);
-	
+
 	// LEUART for GPS
 	CMU_ClockEnable(cmuClock_LEUART1, true);
-	
+
 }

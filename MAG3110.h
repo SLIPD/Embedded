@@ -151,12 +151,6 @@ extern "C" {
 #define MAG_RAW_MASK              0x20
 #define MAG_RST_MASK              0x10
     
-    /**
-     * Data Rate Values (ODR)
-     */
-    
-//#define ADC_RATE_1280         0x00
-    
 typedef struct 
 {
     int16_t x;
@@ -183,7 +177,6 @@ typedef struct
     
 
 Mag_Vector_Type getMAGReadings();
-void writeMagOffset(uint16_t xOff, uint16_t yOff, uint16_t zOff);
 
 #ifdef __cplusplus
 }
