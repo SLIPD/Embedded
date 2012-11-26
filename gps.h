@@ -33,5 +33,5 @@ void GPS_GetPrecision(uint8_t target_precision);
 uint8_t nmea_generateChecksum(char *strPtr) ;
 void leuart_send_str(LEUART_TypeDef *uart, char *msg);
 void Reset();
-
+void GPS_WarmReset(int32_t x , int32_t y , int32_t z , uint32_t seconds , uint16_t week);
 #endif  /* __GPS_H__ */

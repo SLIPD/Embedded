@@ -13,7 +13,7 @@ void eCompassInit()
     Mag_Vector_Type magReading;
     
     uint16_t i = 0;
-    uint16_t preValues = 500;
+    uint16_t preValues = 100;
     int16_t x[preValues];
     int16_t y[preValues];
     int16_t z[preValues];
@@ -23,11 +23,7 @@ void eCompassInit()
     {
         if(MAGRegRead(MAG_DR_STATUS_REG) & MAG_ZYXDR_MASK)
         {
-            TRACE("Getting values!\n");
-            
-            magReading.x = MAGReadX_16();
-            magReading.y = MAGReadY_16();
-            magReading.z = MAGReadZ_16();
+            magReading = getMAGReadings();
             
             x[i] = (int16_t) magReading.x;
             y[i] = (int16_t) magReading.y;
@@ -82,8 +78,8 @@ void eCompassInit()
     iVy = (int16_t) ((yMax + yMin) / 2);
     iVz = (int16_t) ((zMax + zMin) / 2);
     
-    sprintf(str, "iVx = 0x%4.4x %d\niVy = 0x%4.4x %d\niVz = 0x%4.4x %d\n", iVx, iVx, iVy, iVy, iVz, iVz);
-    TRACE(str);
+//    sprintf(str, "iVx = 0x%4.4x %d\niVy = 0x%4.4x %d\niVz = 0x%4.4x %d\n", iVx, iVx, iVy, iVy, iVz, iVz);
+//    TRACE(str);
     
 }
 float ieCompass(int16_t x, int16_t y)

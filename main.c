@@ -119,29 +119,23 @@ int main()
 		basestation_main();
 
 	#endif
-	/*
-	// Display init
+
+        // display init
 	DISPLAY_Init();
+        
+        // init top line
 	DISPLAY_InitMessage(&displayMessageTop);
+        
+        // init bottom line
 	DISPLAY_InitMessage(&displayMessageBottom);
-
-	// display getting fix message
-	*/
+        displayMessageBottom.topLine = false;
+                
 	// magnetometer init
-
 	MAGInit(); 
-	magReading.x = MAGReadX_16();
-	magReading.y = MAGReadY_16();
-	magReading.z = MAGReadZ_16();
-
-	// accelerometer init
-	MMAInit();
-	accelReading.x =  MMAReadX_14();
-	accelReading.y =  MMAReadY_14();
-	accelReading.z =  MMAReadZ_14();
+	magReading = getMAGReadings();
 
 	// eCompass init
-	//eCompassInit();
+	eCompassInit();
   
 	// radio init
 	RADIO_Init();
@@ -149,8 +143,16 @@ int main()
 	// radio get id
 	RADIO_GetID();
 
+	// display getting fix message
+        displayMessageTop.message = ("Getting Fix :)");
+        DISPLAY_MessageWrite(&displayMessageTop);
+        
 	// wait for gps initial fix
 	GPS_GetFix();
+        
+	// display getting fix message
+        displayMessageTop.message = ("Fix Found :D");
+        DISPLAY_MessageWrite(&displayMessageTop);
 
 	LED_Off(RED);
 
@@ -182,7 +184,7 @@ int main()
 		}
 
 		// display update
-    //DISPLAY_Update();
+                //DISPLAY_Update();
                 
 		// gps update
    

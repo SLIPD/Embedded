@@ -100,8 +100,6 @@ void GPS_Init() {
     while (RTC->CNT < nextRTC);
     GPIO->P[4].DOUT = 0;
 
-    TRACE("hello");
-    Reset();
     
     RTC_CounterReset();
     while (!(GPIO->P[4].DIN & (1 << 12))) {
@@ -113,14 +111,6 @@ void GPS_Init() {
     TRACE("GPS INIT COMPLETE\n");
 
 
-}
-
-void Reset(){
-    nmea_sendmessage(LEUART1, "PSRF101,0,0,0,0,0,0,8");
-}
-
-void WarmReset(){
-    nmea_sendmessage(LEUART1, "PSRF101,0,0,0,0,0,0,8");
 }
 
 void switchMode() {
@@ -247,7 +237,7 @@ void LEUART1_IRQHandler(void) {
 void GPS_GetFix() {
 
     while (fix == 0) {
-
+        
         if (nmea_msg_rcvd) {
             INT_Disable();
             memcpy(localBuff, nmea_buffer, 256);
