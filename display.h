@@ -40,6 +40,7 @@ void DISPLAY_SetMessage(DISPLAY_Message *msg);
 
 void DISPLAY_updateLine(DISPLAY_Message *line);
 void DISPLAY_Update();
+void DISPLAY_MessageWrite(DISPLAY_Message *msg);
 void DISPLAY_Init();
 
 void DISPLAY_sendByte(uint8_t control, uint8_t data);

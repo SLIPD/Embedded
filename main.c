@@ -34,7 +34,7 @@ DISPLAY_Message         displayMessageBottom;
 Mag_Vector_Type         magReading;
 Accel_Vector_Type       accelReading;
 uint8_t buf[6];
-char str[32];
+char str[192];
 
 // Prototypes
 void initClocks();
@@ -111,74 +111,97 @@ int main()
 	enableInterrupts();
 	
 	// GPS Init
-	GPS_Init();
+//	GPS_Init();
 	
 	// enable basestation if reqd
 	#ifdef BASESTATION
-		
-		basestation_main();
+//		basestation_main();
 		
 	#endif
-	/*
 	// Display init
 	DISPLAY_Init();
+        
+        // init top line
 	DISPLAY_InitMessage(&displayMessageTop);
+        
+        // init bottom line
 	DISPLAY_InitMessage(&displayMessageBottom);
-
+        displayMessageBottom.topLine = false;
+        
 	// display getting fix message
-	*/
+        displayMessageTop.message = ("Getting Fix :)");
+        DISPLAY_MessageWrite(&displayMessageTop);
+	
 	// magnetometer init
 	MAGInit(); 
-	magReading.x = MAGReadX_16();
-	magReading.y = MAGReadY_16();
-	magReading.z = MAGReadZ_16();
+        magReading = getMAGReadings();
 
 	// accelerometer init
 	MMAInit();
-	accelReading.x =  MMAReadX_14();
-	accelReading.y =  MMAReadY_14();
-	accelReading.z =  MMAReadZ_14();
+        accelReading = getMMAReadings();
         
         // eCompass init
-//        eCompassInit();
+        eCompassInit();
   
 	// radio init
-	RADIO_Init();
+//	RADIO_Init();
 	
 	// radio get id
 	//RADIO_GetID();
 	
 	// wait for gps initial fix
-	GPS_GetFix();
+//	GPS_GetFix();
 	
-	TRACE(":FIX FOUND\n");
+//	TRACE(":FIX FOUND\n");
 	
 	// enable tdma
-	RADIO_EnableTDMA();
+//	RADIO_EnableTDMA();
 	
 	LED_On(RED);
 	LED_On(GREEN);
 	LED_On(BLUE);
 	
-	while (1)
-	{
-		TRACE(":TDMA STARTED\n");
-		for (int i = 0; i < 1000000; i++);
-	}
-	
+//	while (1)
+//	{
+//		TRACE(":TDMA STARTED\n");
+//		for (int i = 0; i < 1000000; i++);
+//	}
+//	DISPLAY_dir(2);
 	while(1)
-	{
-		
+	{       
+            
 		// handle radio msgs
-		RADIO_HandleMessages();
-		
-		// display update
-    //DISPLAY_Update();
+//		RADIO_HandleMessages();
+            
+                magReading = getMAGReadings();
+                accelReading = getMMAReadings();
+//                uint8_t yMSB =  MAGRegRead(MAG_OUT_Y_MSB_REG);
+//                uint8_t yLSB =  MAGRegRead(MAG_OUT_Y_LSB_REG);
+//                sprintf(str, "Y 0x%2.2x %2.2x\n", yMSB, yLSB);
+//                TRACE(str);
+                
+                sprintf(str, "ACCEL x %d, y %d, z %d\n", accelReading.x, accelReading.y, accelReading.z);
+                TRACE(str);
+//                sprintf(str, "MAG x %d, y %d, z %d\n", magReading.x, magReading.y, magReading.z);
+//                TRACE(str);
+                
+//                int16_t heading = ieCompass(magReading.x, magReading.y, magReading.z, accelReading.x, accelReading.y, accelReading.z);
+//                float heading = 0;
+//                heading = iCompass(magReading.x, magReading.y);
+//                sprintf(str, "Head %f", heading);
+//                TRACE(str);
+//                TRACE("\n");
+//                
+//                displayMessageBottom.message = (str);
+//                DISPLAY_MessageWrite(&displayMessageBottom);
+//		// display update
+//                DISPLAY_Update();
                 
 		// gps update
    
 		// sleep until irq
 		
+		for (int i = 0; i < 2000000; i++);
 	}
 	
 }

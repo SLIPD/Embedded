@@ -157,6 +157,15 @@ extern "C" {
     
 //#define ADC_RATE_1280         0x00
     
+typedef struct 
+{
+    int16_t x;
+    int16_t y;
+    int16_t z;
+} Mag_Vector_Type __attribute__ ((packed));
+
+#define Mag_Vector_Len 6
+    
 //prototypes   
     int MAG_RegisterGet(I2C_TypeDef *i2c, uint8_t addr, uint8_t reg, uint8_t *buf, uint8_t len);
     
@@ -172,13 +181,9 @@ extern "C" {
     void MAGActive(void);
     void MAGInit(void);
     
-typedef struct 
-{
-    int16_t x;
-    int16_t y;
-    int16_t z;
-} Mag_Vector_Type __attribute__ ((packed));
-#define Mag_Vector_Len 6
+
+Mag_Vector_Type getMAGReadings();
+void writeMagOffset(uint16_t xOff, uint16_t yOff, uint16_t zOff);
 
 #ifdef __cplusplus
 }

@@ -38,6 +38,13 @@ void eCompassInit()
             magReading.x = MAGReadX_16();
             magReading.y = MAGReadY_16();
             magReading.z = MAGReadZ_16();
+            char str[32];
+            sprintf(str, "magReading.x 0x%4.4x %d\n", magReading.x, magReading.x);
+            TRACE(str);
+            sprintf(str, "magReading.y 0x%4.4x %d\n", magReading.y, magReading.y);
+            TRACE(str);
+            sprintf(str, "magReading.z 0x%4.4x %d\n", magReading.z, magReading.z);
+            TRACE(str);
             
             x[i] = (int16_t) magReading.x;
             y[i] = (int16_t) magReading.y;
@@ -94,6 +101,65 @@ void eCompassInit()
     
     sprintf(trace_str, "iVx = 0x%4.4x %d\niVy = 0x%4.4x %d\niVz = 0x%4.4x %d\n", iVx, iVx, iVy, iVy, iVz, iVz);
     TRACE(trace_str);
+    
+    
+//    writeMagOffset((uint16_t) iVx, (uint16_t) iVy, (uint16_t) iVz);
+}
+
+float lolCompass(int16_t x, int16_t y)
+{
+    float heading;
+    
+    // Hard iron off setting here if done
+    x -= iVx;
+    y -= iVy;
+    char str[32];
+    sprintf(str, "x %d, y %d\n",x, y);
+    TRACE(str);
+    
+    if(y > 0) 
+    {
+        heading = 90 - atan((float)x/(float)y)*(180/PI);
+    }
+    else if (y < 0)
+    {
+        heading = 270 - atan((float)x/(float)y)*(180/PI);
+    }
+    else if(y = 0 & x < 0)
+    {
+        heading = 180;
+    }
+    else if(y = 0, x > 0)
+    {
+        heading = 0;
+    }
+    else
+    {
+        TRACE("BROKEN\n");
+    }
+    return heading;
+}
+
+float iCompass(int16_t x, int16_t y)
+{
+    x -= iVx;
+    y -= iVy;
+    // Calculate heading when the magnetometer is level, then correct for signs of axis.
+    float heading = atan2(y ,x);
+
+    // Correct for when signs are reversed.
+    if(heading < 0)
+    heading += 2*PI;
+    char str[32];
+    sprintf(str, "heading %f\n",heading);
+    TRACE(str);
+    // Convert radians to degrees for readability.
+    float headingDegrees = heading * 180/PI; 
+    headingDegrees = headingDegrees + 270;
+    if (headingDegrees > 360) headingDegrees -= 360;
+    sprintf(str, "headingDegrees %f\n",headingDegrees);
+    TRACE(str);
+    return headingDegrees;
 }
 
 /* iTrig
@@ -318,6 +384,9 @@ int16_t ieCompass(int16_t magX, int16_t magY, int16_t magZ, int16_t accelX, int1
     magX -= iVx;
     magY -= iVy;
     magZ -= iVz;
+    char str[32];
+    sprintf(str, "magX %d, magY %d, magZ %d\n", magX, magY, magZ);
+    TRACE(str);
     
     iPhi = iHundredAtan2Deg(accelY, accelZ);
 

@@ -265,6 +265,13 @@ void DISPLAY_Update()
         
 }
 
+void DISPLAY_MessageWrite(DISPLAY_Message *msg)
+{
+    msg->enabled = true;
+    DISPLAY_SetMessage(msg);
+    DISPLAY_Update();
+}
+
 void DISPLAY_Init()
 {
     

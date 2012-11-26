@@ -170,24 +170,88 @@ void MAGInit(void)
     // MAGRegWrite(0x2E, INT_EN_DRDY_MASK); //Set the interrupt to route to INT1
     // MAGRegWrite(0x2E, INT_EN_DRDY_MASK); //Set the interrupt to route to INT1
     
-    // Reset offset regs
-    MAGRegWrite(MAG_OFF_X_MSB, 0x00);
-    MAGRegWrite(MAG_OFF_X_LSB, 0x00);
-    MAGRegWrite(MAG_OFF_Y_MSB, 0x00);
-    MAGRegWrite(MAG_OFF_Y_LSB, 0x00);
-    MAGRegWrite(MAG_OFF_Z_MSB, 0x00);
-    MAGRegWrite(MAG_OFF_Z_LSB, 0x00);
+//    // Reset offset regs
+//    MAGRegWrite(MAG_OFF_X_MSB, 0x00);
+//    MAGRegWrite(MAG_OFF_X_LSB, 0x00);
+//    MAGRegWrite(MAG_OFF_Y_MSB, 0x00);
+//    MAGRegWrite(MAG_OFF_Y_LSB, 0x00);
+//    MAGRegWrite(MAG_OFF_Z_MSB, 0x00);
+//    MAGRegWrite(MAG_OFF_Z_LSB, 0x00);
+//    
+//    // CTRL_REG2
+//    MAGRegWrite(MAG_CTRL_REG2, (MAGRegRead(MAG_CTRL_REG2) | MAG_AUTO_MRST_MASK )); // Activate automatic magnetic sensor resets
+//    MAGRegWrite(MAG_CTRL_REG2, (MAGRegRead(MAG_CTRL_REG2) | MAG_RAW_MASK )); // Activate raw mode
+//    
+//    // CTRL_REG1
+//    MAGRegWrite(MAG_CTRL_REG1, (MAGRegRead(MAG_CTRL_REG1) & ~MAG_ODR_MASK)); // Active ODR, 80Hz
+//    MAGRegWrite(MAG_CTRL_REG1, (MAGRegRead(MAG_CTRL_REG1) & ~MAG_OS_MASK)); // Active OS, 1
+//    MAGRegWrite(MAG_CTRL_REG1, (MAGRegRead(MAG_CTRL_REG1) & ~MAG_FR_MASK)); // Deactivate Fast Read
+//    MAGRegWrite(MAG_CTRL_REG1, (MAGRegRead(MAG_CTRL_REG1) & ~MAG_TM_MASK)); // Deactivate Trigger Measurement
     
-    // CTRL_REG2
-    MAGRegWrite(MAG_CTRL_REG2, (MAGRegRead(MAG_CTRL_REG2) | MAG_AUTO_MRST_MASK )); // Activate automatic magnetic sensor resets
-    MAGRegWrite(MAG_CTRL_REG2, (MAGRegRead(MAG_CTRL_REG2) | MAG_RAW_MASK )); // Activate raw mode
-    
-    // CTRL_REG1
-    MAGRegWrite(MAG_CTRL_REG1, (MAGRegRead(MAG_CTRL_REG1) & ~MAG_ODR_MASK)); // Active ODR, 80Hz
-    MAGRegWrite(MAG_CTRL_REG1, (MAGRegRead(MAG_CTRL_REG1) & ~MAG_OS_MASK)); // Active OS, 1
-    MAGRegWrite(MAG_CTRL_REG1, (MAGRegRead(MAG_CTRL_REG1) & ~MAG_FR_MASK)); // Deactivate Fast Read
-    MAGRegWrite(MAG_CTRL_REG1, (MAGRegRead(MAG_CTRL_REG1) & ~MAG_TM_MASK)); // Deactivate Trigger Measurement
+    MAGRegWrite(MAG_CTRL_REG2, 0xA0);
+    MAGRegWrite(MAG_CTRL_REG1, 0x01);
     
     MAGActive();  
 }              
 
+Mag_Vector_Type getMAGReadings()
+{
+    Mag_Vector_Type magReading;
+    magReading.x = MAGReadX_16();
+    magReading.y = MAGReadY_16();
+    magReading.z = MAGReadZ_16();
+    return magReading;
+}
+
+void writeMagOffset(uint16_t xOff, uint16_t yOff, uint16_t zOff)
+{
+    MAGStandby();
+    
+    char str[32];
+    
+    uint16_t XMSB = (((int16_t) xOff )>> 7);
+    if(XMSB & 0x8000)
+    {
+        XMSB = (uint8_t)(XMSB|0x80);
+    }
+    
+    uint16_t YMSB = (((int16_t) yOff )>> 7);
+    if(YMSB & 0x8000)
+    {
+        YMSB = (uint8_t)(YMSB|0x80);
+    }
+  
+    uint16_t ZMSB = (((int16_t) zOff )>> 7);
+    if(ZMSB & 0x8000)
+    {
+        ZMSB = (uint8_t)(ZMSB|0x80);
+    }
+    
+    sprintf(str, "xOff 0x%4.4x XMSB 0x%4.4x\n", xOff, XMSB);
+    TRACE(str);
+    sprintf(str, "yOff 0x%4.4x YMSB 0x%4.4x\n", yOff, YMSB);
+    TRACE(str);
+    sprintf(str, "zOff 0x%4.4x ZMSB 0x%4.4x\n", zOff, ZMSB);
+    TRACE(str);
+    
+    // Reset offset regs
+    MAGRegWrite(MAG_OFF_X_MSB, (uint8_t) XMSB);
+    MAGRegWrite(MAG_OFF_X_LSB, (uint8_t) ((xOff & 0xFF) << 1));
+    MAGRegWrite(MAG_OFF_Y_MSB, (uint8_t) YMSB);
+    MAGRegWrite(MAG_OFF_Y_LSB, (uint8_t) ((yOff & 0xFF) << 1));
+    MAGRegWrite(MAG_OFF_Z_MSB, (uint8_t) ZMSB);
+    MAGRegWrite(MAG_OFF_Z_LSB, (uint8_t) ((zOff & 0xFF) << 1));
+    
+    sprintf(str, "xOff 0x%4.4x, MSB 0x%2.2x, LSB 0x%2.2x\n", xOff, (uint8_t) XMSB, (uint8_t)((xOff & 0xFF) << 1));
+    TRACE(str);
+    sprintf(str, "yOff 0x%4.4x, MSB 0x%2.2x, LSB 0x%2.2x\n", yOff, (uint8_t) YMSB, (uint8_t) ((yOff & 0xFF) << 1));
+    TRACE(str);
+    sprintf(str, "zOff 0x%4.4x, MSB 0x%2.2x, LSB 0x%2.2x\n", zOff, (uint8_t) ZMSB, (uint8_t)((zOff & 0xFF) << 1));
+    TRACE(str);
+    
+    MAGRegWrite(MAG_CTRL_REG2, (MAGRegRead(MAG_CTRL_REG2) | MAG_AUTO_MRST_MASK )); // Activate automatic magnetic sensor resets
+    MAGRegWrite(MAG_CTRL_REG2, (MAGRegRead(MAG_CTRL_REG2) & ~MAG_RAW_MASK )); // Activate user offset mode
+    
+    
+    MAGActive(); 
+}

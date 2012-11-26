@@ -143,3 +143,11 @@ void MMAInit(void) {
   MMAActive();  
 }              
 
+Accel_Vector_Type getMMAReadings()
+{
+    Accel_Vector_Type accelReading;
+    accelReading.x =  MMAReadX_14();
+    accelReading.y =  MMAReadY_14();
+    accelReading.z =  MMAReadZ_14();
+    return accelReading;
+}
