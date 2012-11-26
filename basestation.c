@@ -44,8 +44,8 @@ void basestation_main()
 		}
 	}
 	
-	while (!(UART1->STATUS & UART_STATUS_TXBL));
-	UART1->TXDATA = '*';
+	uint8_t start = '*';
+	TRACE_SendPayload(&start,1);
 	
 	if (gps_enable)
 	{
@@ -140,6 +140,9 @@ void basestation_main()
 			
 		}
 		
+		if (RADIO_Recv(pibound_packet))
+			TRACE_SendPayload(pibound_packet,32);
+		/*
 		if (UART1->STATUS & UART_STATUS_TXBL)
 		{
 			
@@ -160,6 +163,7 @@ void basestation_main()
 			UART1->TXDATA = pibound_packet[pibound_position++];
 			
 		}
+		*/
 		
 	}
 	
@@ -177,6 +181,9 @@ void basestation_echo()
 			p[position++] = UART1->RXDATA;
 	}
 	
+	TRACE_SendPayload(p,32);
+	
+	/*
 	position = 0;
 	
 	while (position < 32)
@@ -184,6 +191,7 @@ void basestation_echo()
 		if (UART1->STATUS & UART_STATUS_TXBL)
 			UART1->TXDATA = p[position++];
 	}
+	*/
 	
 }
 

@@ -63,28 +63,60 @@ void UART1_TX_IRQHandler()
 void TRACE(char *format, ...)
 {
 	
-	#ifndef BASESTATION
+	LED_Toggle(GREEN);
+	
+	char msg[512];
+	
+	va_list args;
+	va_start( args, format );
+	vsprintf(msg, format, args );
+	va_end( args );
+	
+	#ifdef BASESTATION
 		
-		INT_Disable();
-		
-		char msg[512];
-		
-		va_list args;
-		va_start( args, format );
-		vsprintf(msg, format, args );
-		va_end( args );
+		uint16_t length = strlen(msg),
+			position = 0;
+		uint8_t packet[32];
+		packet[0] = 0xFE;
 		
 		int i;
-		for (i = 0; i < strlen(msg); i++)
+		for (i = 0; i < length; i++)
 		{
-			trace_buf[trace_writePosition] = msg[i];
-			trace_writePosition = (trace_writePosition + 1) % TRACE_BUF_SIZE;
+			
+			packet[1 + (i % 31)] = msg[position++];
+			if ((1 + (i % 31)) % 32 == 0)
+			{
+				TRACE_SendPayload(packet,32);
+			}
+			
 		}
+		while (i % 31)
+		{
+			packet[i+1] = 0;
+			i++;
+		}
+		TRACE_SendPayload(packet,32);
 		
-		USART_IntEnable(UART1, UART_IF_TXBL);
-		
-		INT_Enable();
-		
+	#else
+		TRACE_SendPayload(msg,strlen(msg));
 	#endif
+	
+}
+
+void TRACE_SendPayload(uint8_t *payload, uint16_t size)
+{
+	
+	INT_Disable();
+	
+	int i;
+	for (i = 0; i < size; i++)
+	{
+		trace_buf[trace_writePosition] = payload[i];
+		trace_writePosition = (trace_writePosition + 1) % TRACE_BUF_SIZE;
+	}
+	
+	USART_IntEnable(UART1, UART_IF_TXBL);
+	
+	INT_Enable();
 	
 }

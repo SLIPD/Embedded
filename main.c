@@ -215,12 +215,8 @@ void enableInterrupts()
 	NVIC_EnableIRQ(LEUART1_IRQn);
 	NVIC_SetPriority(LEUART1_IRQn, 3);
 
-	#ifndef BASESTATION
-
-		NVIC_EnableIRQ(UART1_TX_IRQn);
-		NVIC_SetPriority(UART1_TX_IRQn, 5);
-
-	#endif
+	NVIC_EnableIRQ(UART1_TX_IRQn);
+	NVIC_SetPriority(UART1_TX_IRQn, 5);
 
 }
 
