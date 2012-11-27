@@ -16,15 +16,11 @@
 extern "C" {
 #endif
     
-// consts
-    
-#define MINDELTATRIG 1 
-#define MINDELTADIV 1
-    
 // prototypes
     
-    void eCompassInit();
-    float ieCompass(int16_t x, int16_t y);
+void eCompassInit();
+float ieCompass(int16_t x, int16_t y);
+float getBearing(int32_t lat1, int32_t long1, int32_t lat2, int32_t long2);
 
 
 #ifdef	__cplusplus
