@@ -24,7 +24,8 @@ uint8_t txBufferMem[RADIO_BUFFER_SIZE * 32],
 	rxBufferMem[RADIO_BUFFER_SIZE * 32];
 queue_t txBuffer, rxBuffer;
 bool auto_refil = false,
-	send_in_progress = false;
+	send_in_progress = false,
+	tx_enabled = false;
 
 uint8_t node_id = 0xFF;
 uint32_t tdma_gp,
@@ -49,7 +50,8 @@ volatile uint16_t tdma_stage_flags = 0;
 volatile uint8_t radio_irq_flags = 0;
 uint16_t tx_packet_count = 0,
 	rx_packet_count = 0;
-uint32_t last_tx = 0;
+uint32_t last_tx = 0,
+	last_radio = 0;
 
 bool wait_callback = false;
 uint8_t readRegisterValue;
@@ -275,6 +277,8 @@ bool RADIO_Recv(uint8_t payload[32])
 void radio_storePacket(uint8_t *data, uint16_t size)
 {
 	
+	last_radio = TIMER_CounterGet(RADIO_TIMER);
+	
 	Packet *p = (Packet*)&data[1];
 	#ifdef BASESTATION
 		
@@ -334,6 +338,8 @@ void RADIO_TxBufferFill()
 		}
 		TRACE("#%i: RADIO_TxBufferFill(): %i packets uploaded\n",TIMER_CounterGet(RADIO_TIMER), i);
 		tx_packet_count += i;
+		
+		last_radio = TIMER_CounterGet(RADIO_TIMER);
 	}
 	else if ((!(radio_readRegister(NRF_FIFO_STATUS) & 0x20)) && (QUEUE_Read(&txBuffer,&payload[1])))
 	{
@@ -345,6 +351,8 @@ void RADIO_TxBufferFill()
 		
 		TRACE("#%i: RADIO_TxBufferFill(): 1 packet uploaded\n",TIMER_CounterGet(RADIO_TIMER));
 		tx_packet_count++;
+		
+		last_radio = TIMER_CounterGet(RADIO_TIMER);
 	}
 	
 }
@@ -495,7 +503,10 @@ void RADIO_ConfigTDMA(Packet p)
 
 void RADIO_EnableTDMA()
 {
-	
+	RADIO_Enable(OFF);
+	RADIO_SetMode(RX);
+	RADIO_Enable(RX);
+	return;
 	TIMER_TopSet(PPS_TIMER, (48000000 / 1024));
 	TIMER_TopSet(RADIO_TIMER, (48000000 / 1024));
 	
@@ -784,6 +795,27 @@ void RADIO_HandleMessages()
 		tdma_stage_flags &= ~(1 << 7);
 	}
 	
+	if (!RADIO_Sending() && tx_enabled)
+	{
+		RADIO_Enable(RX);
+		RADIO_SetMode(RX);
+		RADIO_Enable(RX);
+		tx_enabled = false;
+	}
+	
+	if ((last_radio + 3277 + (*((uint32_t*)(0xFE081F0)) & 0xFF) % TIMER_TopGet(RADIO_TIMER) > TIMER_CounterGet(RADIO_TIMER)) && 
+		RADIO_TxBufferSize())
+	{
+		
+		RADIO_Enable(OFF);
+		RADIO_SetMode(TX);
+		
+		RADIO_TxBufferFill();
+		
+		RADIO_Enable(TX);
+		tx_enabled = true;
+	}
+	
 	if (radio_irq_flags)
 	{
 		
@@ -799,7 +831,7 @@ void RADIO_HandleMessages()
 		// tx
 		if (status & 0x20)
 		{
-			NRF_CE_lo;
+			
 			
 			TRACE("#%i: radio_interrupt_rt() : TX\n", TIMER_CounterGet(RADIO_TIMER));
 			last_tx = TIMER_CounterGet(RADIO_TIMER);
@@ -835,7 +867,7 @@ void RADIO_HandleMessages()
 				tx_packet_count++;
 			}
 			
-			NRF_CE_hi;
+			
 			
 		}
 		
@@ -854,10 +886,12 @@ void RADIO_HandleMessages()
 					payload[0] = NRF_R_RX_PAYLOAD;
 					USART2_Transfer(payload,33,radio_cs,radio_storePacket);
 				}
+				last_radio = TIMER_CounterGet(RADIO_TIMER);
 			} else if (!(fifo_status & 0x01))
 			{
 				payload[0] = NRF_R_RX_PAYLOAD;
 				USART2_Transfer(payload,33,radio_cs,radio_storePacket);
+				last_radio = TIMER_CounterGet(RADIO_TIMER);
 			}
 			
 		}

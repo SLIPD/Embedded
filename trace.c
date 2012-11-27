@@ -53,7 +53,7 @@ void UART1_TX_IRQHandler()
 	if (!(UART1->STATUS & UART_STATUS_TXBL))
 		return;
 	
-	if ((trace_readPosition+1)%TRACE_BUF_SIZE != trace_writePosition && trace_enabled)
+	if ((trace_readPosition+1)%TRACE_BUF_SIZE != trace_writePosition)
 	{
 		UART1->TXDATA = trace_buf[(trace_readPosition+1)%TRACE_BUF_SIZE];
 		trace_readPosition = (trace_readPosition + 1) % TRACE_BUF_SIZE;
@@ -72,6 +72,9 @@ void TRACE_Enable()
 
 void TRACE(char *format, ...)
 {
+	
+	if (!trace_enabled)
+		return;
 	
 	char msg[512];
 	

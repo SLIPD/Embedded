@@ -5,6 +5,7 @@
 #include "packets.h"
 #include "radio.h"
 #include "gps.h"
+#include "led.h"
 
 /* variables */
 bool pre_tdma = true;
@@ -25,6 +26,10 @@ void basestation_main()
 		gps_enable = false,
 		tx = false;
 	
+	LED_On(RED);
+	LED_On(GREEN);
+	LED_On(BLUE);
+	
 	while (waiting)
 	{
 		if (UART1->STATUS & UART_STATUS_RXDATAV)
@@ -43,9 +48,14 @@ void basestation_main()
 		}
 	}
 	
+	LED_Off(BLUE);
+	for (int i = 0; i < 100000; i++);
+	
 	while (!(UART1->STATUS & UART_STATUS_TXBL));
 	UART1->TXDATA = '*';
-	TRACE_Enable();
+	
+	LED_Off(RED);
+	for (int i = 0; i < 100000; i++);
 	
 	if (gps_enable)
 	{
@@ -83,6 +93,9 @@ void basestation_main()
 		basestation_echo();
 	}
 	
+	LED_Off(GREEN);
+	TRACE_Enable();
+	
 	RADIO_Enable(OFF);
 	RADIO_SetMode(RX);
 	RADIO_Enable(RX);
@@ -91,7 +104,7 @@ void basestation_main()
 	{
 		
 		RADIO_HandleMessages();
-		
+		/*
 		if (pre_tdma)
 		{
 			if (RADIO_TxBufferSize())
@@ -122,6 +135,7 @@ void basestation_main()
 				
 			}
 		}
+		*/
 		
 		if (UART1->STATUS & UART_STATUS_RXDATAV)
 		{
@@ -144,28 +158,6 @@ void basestation_main()
 		
 		if (RADIO_Recv(pibound_packet))
 			TRACE_SendPayload(pibound_packet,32);
-		/*
-		if (UART1->STATUS & UART_STATUS_TXBL)
-		{
-			
-			if (pibound_position == 32)
-			{
-				
-				if (RADIO_Recv(pibound_packet))
-				{
-					pibound_position = 0;
-				}
-				else
-				{
-					continue;
-				}
-				
-			}
-			
-			UART1->TXDATA = pibound_packet[pibound_position++];
-			
-		}
-		*/
 		
 	}
 	
@@ -177,23 +169,15 @@ void basestation_echo()
 	uint8_t p[32],
 		position = 0;
 	
-	while (position < 32)
+	for (position = 0; position < 32; position++)
 	{
-		if (UART1->STATUS & UART_STATUS_RXDATAV)
-			p[position++] = UART1->RXDATA;
+		while (!(UART1->STATUS & UART_STATUS_RXDATAV));
+		p[position] = UART1->RXDATA;
 	}
+	
+	for (int i = 0; i < 100000; i++);
 	
 	TRACE_SendPayload(p,32);
-	
-	/*
-	position = 0;
-	
-	while (position < 32)
-	{
-		if (UART1->STATUS & UART_STATUS_TXBL)
-			UART1->TXDATA = p[position++];
-	}
-	*/
 	
 }
 
@@ -210,7 +194,7 @@ bool basestation_handlePacket(Packet *p)
 			if (pre_tdma)
 			{
 				RADIO_ConfigTDMA(*p);
-				pre_tdma = false;
+				//pre_tdma = false;
 				RADIO_EnableTDMA();
 			}
 			break;

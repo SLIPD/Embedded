@@ -40,7 +40,6 @@ char str[32];
 void initClocks();
 void enableTimers();
 void enableInterrupts();
-void basestation_main();
 bool basestation_handlePacket(Packet p);
 
 void wait(uint32_t ms)
@@ -151,7 +150,7 @@ int main()
   */
   
 	// wait for gps initial fix
-	GPS_GetFix();
+	//GPS_GetFix();
         
   /*
 	// display getting fix message
