@@ -119,14 +119,15 @@ int main()
 		basestation_main();
 
 	#endif
-
-        // display init
+	
+	/*
+	// display init
 	DISPLAY_Init();
         
-        // init top line
+	// init top line
 	DISPLAY_InitMessage(&displayMessageTop);
         
-        // init bottom line
+	// init bottom line
 	DISPLAY_InitMessage(&displayMessageBottom);
         displayMessageBottom.topLine = false;
                 
@@ -136,24 +137,28 @@ int main()
 
 	// eCompass init
 	eCompassInit();
-  
+  */
 	// radio init
 	RADIO_Init();
 
 	// radio get id
 	RADIO_GetID();
 
+	/*
 	// display getting fix message
-        displayMessageTop.message = ("Getting Fix :)");
-        DISPLAY_MessageWrite(&displayMessageTop);
-        
+	displayMessageTop.message = ("Getting Fix :)");
+	DISPLAY_MessageWrite(&displayMessageTop);
+  */
+  
 	// wait for gps initial fix
 	GPS_GetFix();
         
+  /*
 	// display getting fix message
-        displayMessageTop.message = ("Fix Found :D");
-        DISPLAY_MessageWrite(&displayMessageTop);
-
+	displayMessageTop.message = ("Fix Found :D");
+	DISPLAY_MessageWrite(&displayMessageTop);
+	*/
+	
 	LED_Off(RED);
 
 	TRACE(":FIX FOUND\n");

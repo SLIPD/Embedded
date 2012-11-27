@@ -44,8 +44,9 @@ void basestation_main()
 		}
 	}
 	
-	uint8_t start = '*';
-	TRACE_SendPayload(&start,1);
+	while (!(UART1->STATUS & UART_STATUS_TXBL));
+	UART1->TXDATA = '*';
+	TRACE_Enable();
 	
 	if (gps_enable)
 	{

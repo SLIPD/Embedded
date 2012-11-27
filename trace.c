@@ -21,6 +21,7 @@
 static uint8_t trace_buf[TRACE_BUF_SIZE];
 uint32_t trace_writePosition = 0,
 	trace_readPosition = TRACE_BUF_SIZE-1;
+bool trace_enabled = false;
 
 /* prototypes */
 
@@ -40,6 +41,10 @@ void TRACE_Init()
 	UART1->ROUTE = UART_ROUTE_LOCATION_LOC3
           | UART_ROUTE_TXPEN | UART_ROUTE_RXPEN;
 
+	#ifndef BASESTATION
+		TRACE_Enable();
+	#endif
+
 }
 
 void UART1_TX_IRQHandler()
@@ -48,7 +53,7 @@ void UART1_TX_IRQHandler()
 	if (!(UART1->STATUS & UART_STATUS_TXBL))
 		return;
 	
-	if ((trace_readPosition+1)%TRACE_BUF_SIZE != trace_writePosition)
+	if ((trace_readPosition+1)%TRACE_BUF_SIZE != trace_writePosition && trace_enabled)
 	{
 		UART1->TXDATA = trace_buf[(trace_readPosition+1)%TRACE_BUF_SIZE];
 		trace_readPosition = (trace_readPosition + 1) % TRACE_BUF_SIZE;
@@ -58,6 +63,11 @@ void UART1_TX_IRQHandler()
 		USART_IntDisable(UART1, UART_IF_TXBL);
 	}
 	
+}
+
+void TRACE_Enable()
+{
+	trace_enabled = true;
 }
 
 void TRACE(char *format, ...)
