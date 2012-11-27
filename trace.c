@@ -73,8 +73,6 @@ void TRACE_Enable()
 void TRACE(char *format, ...)
 {
 	
-	LED_Toggle(GREEN);
-	
 	char msg[512];
 	
 	va_list args;
@@ -84,28 +82,35 @@ void TRACE(char *format, ...)
 	
 	#ifdef BASESTATION
 		
-		uint16_t length = strlen(msg),
-			position = 0;
+		uint16_t length = strlen(msg);
+		uint16_t position = 0;
 		uint8_t packet[32];
 		packet[0] = 0xFE;
+		//abcdefghij
 		
 		int i;
 		for (i = 0; i < length; i++)
 		{
 			
-			packet[1 + (i % 31)] = msg[position++];
-			if ((1 + (i % 31)) % 32 == 0)
+			position++;
+			position = position % 32;
+			if (position == 0)
 			{
 				TRACE_SendPayload(packet,32);
+				position = 1;
 			}
+			packet[position] = msg[i];
 			
 		}
-		while (i % 31)
+		
+		if (position != 32)
 		{
-			packet[i+1] = 0;
-			i++;
+			for (int j = position; j < 32; j++)
+			{
+				packet[j] = 0;
+			}
+			TRACE_SendPayload(packet,32);
 		}
-		TRACE_SendPayload(packet,32);
 		
 	#else
 		TRACE_SendPayload(msg,strlen(msg));

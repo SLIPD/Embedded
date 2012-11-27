@@ -158,8 +158,6 @@ int main()
 	displayMessageTop.message = ("Fix Found :D");
 	DISPLAY_MessageWrite(&displayMessageTop);
 	*/
-	
-	LED_Off(RED);
 
 	TRACE(":FIX FOUND\n");
 
@@ -167,8 +165,6 @@ int main()
 	RADIO_EnableTDMA();
 
 	Packet p;
-
-	LED_On(RED);
 
 	while(1)
 	{
