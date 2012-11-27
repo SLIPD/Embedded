@@ -20,13 +20,11 @@ typedef struct
 typedef struct
 {
 	
-	struct
-	{
-		int32_t latitude;
-		int32_t longitude;
-		int16_t elevation;
-		uint16_t hexaseconds;
-	} positions[2];
+	int32_t latitude;
+	int32_t longitude;
+	int16_t elevation;
+        uint16_t hexaseconds;
+	
 	
 	uint16_t last_seq_num;
 	
