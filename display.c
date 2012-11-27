@@ -42,6 +42,7 @@ bool displayUpdateRequired = false;
 // dir: 4 hard right
 void DISPLAY_direction(uint8_t direction)
 {
+    TRACE("DISPLAY_direction\n");
     // Clear top line
     char blank[16];
     memset(blank,0,16);

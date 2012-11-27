@@ -23,6 +23,8 @@ void eCompassInit()
     {
         if(MAGRegRead(MAG_DR_STATUS_REG) & MAG_ZYXDR_MASK)
         {
+            wait(100);
+            TRACE("Getting calibrate values!\n");
             magReading = getMAGReadings();
             
             x[i] = (int16_t) magReading.x;
