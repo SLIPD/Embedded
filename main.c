@@ -27,6 +27,8 @@
 #include "eCompass.h"
 
 #include "gps.h"
+#include "base64.h"
+#include "basestation.h"
 
 // Global variables
 DISPLAY_Message         displayMessageTop;
@@ -119,7 +121,7 @@ int main()
 
 	#endif
 	
-	/*
+	
 	// display init
 	DISPLAY_Init();
         
@@ -129,14 +131,17 @@ int main()
 	// init bottom line
 	DISPLAY_InitMessage(&displayMessageBottom);
         displayMessageBottom.topLine = false;
-                
+  
+  displayMessageTop.message = ("Starting up...");
+	DISPLAY_MessageWrite(&displayMessageTop);
+  
 	// magnetometer init
 	MAGInit(); 
 	magReading = getMAGReadings();
 
 	// eCompass init
 	eCompassInit();
-  */
+  
 	// radio init
 	RADIO_Init();
 
@@ -173,6 +178,49 @@ int main()
 
 		if (RADIO_Recv((uint8_t*)&p))
 		{
+			switch (p.msgType)
+			{
+			
+			case 0x00: // ident
+				break;
+			case 0x01: // node position
+				break;
+			case 0x02: // way point
+				// call set waypoint method (gerald & robbie)
+				break;
+			case 0x03: // message
+				{
+					
+					// decode message
+					char msg[32],
+						debug[32];
+					decodeData(p.payload.message.message, msg, debug);
+					
+					if (strcmp(debug,"PING") == 0)
+					{
+						TRACE("PING - PONG\n");
+						
+						Packet pong;
+						pong.destinationId = 0x00;
+						pong.msgType = 0x03;
+						pong.ttl = 1;
+						encodeDataString("$PONG",pong.payload.message.message);
+						RADIO_Send((uint8_t*)&pong);
+					}
+					
+					TRACE(msg);
+					TRACE("$");
+					TRACE(debug);
+					TRACE("\n");
+					
+					displayMessageBottom.message = msg;
+					DISPLAY_MessageWrite(&displayMessageBottom);
+					
+				}
+				break;
+			
+			}
+			
 			if (p.msgType == 0x03 && p.payload.message.message[0] == 0x01)
 			{
 				p.destinationId = 0x00;

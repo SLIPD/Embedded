@@ -6,5 +6,6 @@
 void TRACE_Init();
 void TRACE(char *format, ...);
 void TRACE_SendPayload(uint8_t *payload, uint16_t size);
+void TRACE_Enable();
 
 #endif

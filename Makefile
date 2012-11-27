@@ -101,7 +101,8 @@ queue.c \
 radio.c \
 usart.c \
 time_schedule.c \
-basestation.c
+basestation.c \
+base64.c
 
 S_SRC +=  \
 CMSIS/CM3/DeviceSupport/EnergyMicro/EFM32/startup/cs3/startup_efm32gg.s
