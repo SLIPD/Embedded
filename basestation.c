@@ -69,7 +69,7 @@ void basestation_main()
 		
 		p.payload.nodePosition.latitude = gpsv.lat;
 		p.payload.nodePosition.longitude = gpsv.lon;
-		p.payload.nodePosition.elevation = gpsv.alt/10;
+		p.payload.nodePosition.elevation = gpsv.alt;
 		p.payload.nodePosition.hexaseconds = 0;
 		
 		p.payload.nodePosition.last_seq_num = 0;

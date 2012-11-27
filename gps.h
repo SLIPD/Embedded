@@ -27,6 +27,7 @@ typedef struct
 void leuart_send_array(LEUART_TypeDef *uart, uint8_t *msg, uint32_t len);
 void GPS_Init();
 bool GPS_Read(GPS_Vector_Type *vector);
+void GPS_GetLastPosition(GPS_Vector_Type *vector);
 void  GPS_Main();
 void GPS_GetFix();
 void switchMode();

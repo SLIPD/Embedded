@@ -32,12 +32,13 @@ uint8_t localBuff[256];
 GPS_Vector_Type lastRead;
 GPS_Vector_Type toSend;
 bool sendNow;
+bool haveRead;
 /* prototypes */
 void switchMode();
 
 /* functions */
 void GPS_Init() {
-
+    haveRead = false;
     lastRead.alt = 0;
     lastRead.lat = 0;
     lastRead.lon = 0;
@@ -356,12 +357,30 @@ void GPS_GetPrecision(uint8_t target_precision) {
     }
 
 }
+/**
+ * returns last position... can only be done after gps_read
+ * @param vector
+ */
+void GPS_GetLastPosition(GPS_Vector_Type *vector){
+    if (!haveRead){
+        GPS_Read(vector);
+    }
+    vector->alt = lastRead.alt;
+    vector->lat = lastRead.lat;
+    vector->lon = lastRead.lon;
+            
+}
+
+
+
 
 /**
  * reads in position data after we have got a fix
  * only call after calling GPS_GetFix
+ * Don't call repeatedly outside of gps.c
  */
-bool GPS_Read(GPS_Vector_Type *vector) {
+bool GPS_Read(GPS_Vector_Type *vector) { 
+    haveRead = true;
     bool updated = false;
     if (nmea_msg_rcvd) {
         if (fix == 1) {
