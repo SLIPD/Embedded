@@ -267,6 +267,8 @@ void GPS_GetPrecision(uint8_t target_precision)
 				if (precision < target_precision)
 					precision_reached = true;
 				
+				TRACE("PRECISION: %i\n", precision);
+				
 			}
 			
 			nmea_msg_rcvd = 0;

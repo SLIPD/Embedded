@@ -14,6 +14,7 @@ void TS_Init(schedule_t *schedule, TIMER_TypeDef *timer, uint8_t cc)
 	
 	schedule->start = NULL;
 	schedule->current = NULL;
+	schedule->last_action = NULL;
 	schedule->timer = timer;
 	schedule->timerCC = cc;
 	
@@ -73,11 +74,28 @@ void TS_Complete(schedule_t *schedule)
 void TS_Update(schedule_t *schedule)
 {
 	
-	schedule->current->action();
-	schedule->current = schedule->current->next;
-	if (schedule->current == NULL)
-		schedule->current = schedule->start;
+	uint32_t current_time = TIMER_CounterGet(schedule->timer);
+	
+	if (current_time < schedule->current->time)
+	{
+		current_time += TIMER_TopGet(schedule->timer);
+	}
+	
+	do
+	{
+		
+		schedule->current->action();
+		schedule->current = schedule->current->next;
+		if (schedule->current == NULL)
+		{
+			schedule->current = schedule->start;
+			current_time -= TIMER_TopGet(schedule->timer);
+		}
+		
+	}
+	while (schedule->current->time <= current_time);
 	
 	TIMER_CompareSet(schedule->timer, schedule->timerCC, schedule->current->time);
+	TRACE("#%i: NEXT SCHEDULED IRQ\n", TIMER_CounterGet(schedule->timer));
 	
 }

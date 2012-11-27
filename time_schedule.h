@@ -20,7 +20,8 @@ typedef struct
 	TIMER_TypeDef *timer;
 	uint32_t timerCC;
 	action_t *start,
-		*current;
+		*current,
+		*last_action;
 	
 } schedule_t;
 

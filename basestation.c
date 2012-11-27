@@ -20,7 +20,6 @@ void basestation_main()
 	
 	uint8_t pibound_packet[32],
 		meshbound_packet[32],
-		pibound_position = 32,
 		meshbound_position = 0;
 	bool waiting = true,
 		gps_enable = false,
@@ -56,7 +55,7 @@ void basestation_main()
 		GPS_GetFix();
 		
 		// wait for precise fix
-		GPS_GetPrecision(30);
+		GPS_GetPrecision(100);
 		
 		GPS_Vector_Type gpsv;
 		GPS_Read(&gpsv);
@@ -76,8 +75,8 @@ void basestation_main()
 		
 		p.payload.nodePosition.last_seq_num = 0;
 		
-		pibound_position = 0;
 		memcpy(&pibound_packet,&p,32);
+		TRACE_SendPayload(pibound_packet,32);
 	}
 	else
 	{
@@ -140,6 +139,8 @@ void basestation_main()
 			}
 			
 		}
+		
+		RADIO_HandleMessages();
 		
 		if (RADIO_Recv(pibound_packet))
 			TRACE_SendPayload(pibound_packet,32);
@@ -206,9 +207,12 @@ bool basestation_handlePacket(Packet *p)
 		switch (p->msgType)
 		{
 		case 0x00:
-			RADIO_ConfigTDMA(*p);
-			pre_tdma = false;
-			RADIO_EnableTDMA();
+			if (pre_tdma)
+			{
+				RADIO_ConfigTDMA(*p);
+				pre_tdma = false;
+				RADIO_EnableTDMA();
+			}
 			break;
 		}
 		

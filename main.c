@@ -185,7 +185,7 @@ int main()
 		}
 
 		// display update
-                //DISPLAY_Update();
+		//DISPLAY_Update();
                 
 		// gps update
    
@@ -205,10 +205,10 @@ void enableInterrupts()
 	NVIC_EnableIRQ(TIMER1_IRQn);
 	NVIC_EnableIRQ(TIMER2_IRQn);
 	NVIC_EnableIRQ(TIMER3_IRQn);
-	NVIC_SetPriority(TIMER0_IRQn, 4);
-	NVIC_SetPriority(TIMER1_IRQn, 4);
-	NVIC_SetPriority(TIMER2_IRQn, 4);
-	NVIC_SetPriority(TIMER3_IRQn, 4);
+	NVIC_SetPriority(TIMER0_IRQn, 3);
+	NVIC_SetPriority(TIMER1_IRQn, 3);
+	NVIC_SetPriority(TIMER2_IRQn, 3);
+	NVIC_SetPriority(TIMER3_IRQn, 3);
 
 	NVIC_EnableIRQ(USART2_TX_IRQn);
 	NVIC_EnableIRQ(USART2_RX_IRQn);
@@ -216,7 +216,7 @@ void enableInterrupts()
 	NVIC_SetPriority(USART2_RX_IRQn, 5);
 
 	NVIC_EnableIRQ(LEUART1_IRQn);
-	NVIC_SetPriority(LEUART1_IRQn, 3);
+	NVIC_SetPriority(LEUART1_IRQn, 4);
 
 	NVIC_EnableIRQ(UART1_TX_IRQn);
 	NVIC_SetPriority(UART1_TX_IRQn, 5);
