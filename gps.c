@@ -2,7 +2,7 @@
 
 #include "stdint.h"
 #include "string.h"
-
+#include "stdbool.h"
 #include "efm32.h"
 
 #include "efm32_gpio.h"
@@ -10,9 +10,10 @@
 #include "efm32_rtc.h"
 #include "efm32_cmu.h"
 #include "efm32_int.h"
-
 #include "trace.h"
 #include "led.h"
+#include "packets.h"
+#include "radio.h"
 
 const static uint8_t sirf_command_NMEA[] = {0xA0, 0xA2, 0x00, 0x18, 0x81, 0x02, 0x00, 0x01, 0x00, 0x01, 0x00, 0x01, 0x01, 0x01, 0x01, 0x01, 0x00, 0x01, 0x00, 0x01, 0x00, 0x00, 0x01, 0x01, 0x00, 0x00, 0x12, 0xC0, 0x01, 0x60, 0xB0, 0xB3};
 const static uint8_t sirf_command_MPM[] = {0xA0, 0xA2, 0x00, 0x06, 0xDA, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0xDC, 0xB0, 0xB3};
@@ -25,19 +26,24 @@ uint32_t last_mode_change = 0;
 uint32_t fix = 0;
 uint32_t nmea_len = 0;
 uint32_t nmea_msg_rcvd = 0;
+uint16_t seqNumber;
 uint8_t nmea_buffer[256];
 uint8_t localBuff[256];
-GPS_Vector_Type *lastRead;
+GPS_Vector_Type lastRead;
+GPS_Vector_Type toSend;
+bool sendNow;
 /* prototypes */
 void switchMode();
 
 /* functions */
 void GPS_Init() {
 
-    lastRead->alt = 0;
-    lastRead->lat = 0;
-    lastRead->lon = 0;
+    lastRead.alt = 0;
+    lastRead.lat = 0;
+    lastRead.lon = 0;
     int nextRTC;
+    sendNow = false;
+    seqNumber = 0;
     fix = 0;
     LEUART_Init_TypeDef leuart1Init = {
         .enable = leuartEnable, /* Activate data reception on LEUn_TX pin. */
@@ -355,7 +361,8 @@ void GPS_GetPrecision(uint8_t target_precision) {
  * reads in position data after we have got a fix
  * only call after calling GPS_GetFix
  */
-void GPS_Read(GPS_Vector_Type *vector) {
+bool GPS_Read(GPS_Vector_Type *vector) {
+    bool updated = false;
     if (nmea_msg_rcvd) {
         if (fix == 1) {
             INT_Disable();
@@ -453,7 +460,7 @@ void GPS_Read(GPS_Vector_Type *vector) {
                 longBuff[5] = "\0";
                 latBuff[4] = "\0";
                 altBuffer[altCount] = "\0";
-                short altit = (short) atoi(altBuffer);
+                int16_t altit = atoi(altBuffer);
 
                 int32_t longitude = 10000 * atoi(longBuff);
                 longitude += atoi(&longBuff[6]);
@@ -462,9 +469,10 @@ void GPS_Read(GPS_Vector_Type *vector) {
                 latitude += atoi(&latBuff[5]);
                 latitude = latitude*north;
 
-                lastRead->alt = altit;
-                lastRead->lat = latitude;
-                lastRead->lon = longitude;
+                lastRead.alt = altit;
+                lastRead.lat = latitude;
+                lastRead.lon = longitude;
+                updated = true;
             }
 
 
@@ -473,9 +481,31 @@ void GPS_Read(GPS_Vector_Type *vector) {
     
 
 
-    vector->alt = lastRead->alt;
-    vector->lat = lastRead->lat;
-    vector->lon = lastRead->lon;
+    vector->alt = lastRead.alt;
+    vector->lat = lastRead.lat;
+    vector->lon = lastRead.lon;
+    return updated;
 
 }
 
+//creates packets and sends on second iteration
+void  GPS_Main(){
+    if (sendNow){
+        sendNow = false;
+        MessageType_NodePosition nodePos;
+        nodePos.elevation = toSend.alt;
+        nodePos.latitude = toSend.lat;
+        nodePos.longitude = toSend.lon;
+        nodePos.last_seq_num = seqNumber;
+        Packet pack;
+        pack.destinationId = 0x00;
+        pack.msgType = 0x01;
+        pack.payload.nodePosition = nodePos;             
+        RADIO_Send((uint8_t*) &pack);
+        seqNumber++;
+        
+    }else if (GPS_Read(&toSend)){
+        sendNow = true;
+    }
+    
+}

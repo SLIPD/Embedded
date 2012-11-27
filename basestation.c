@@ -67,11 +67,10 @@ void basestation_main()
 		p.ttl = 0x01;
 		p.msgType = 0x01;
 		
-		memset(p.payload.nodePosition.positions,0,12*2);
-		p.payload.nodePosition.positions[0].latitude = gpsv.lat;
-		p.payload.nodePosition.positions[0].longitude = gpsv.lon;
-		p.payload.nodePosition.positions[0].elevation = gpsv.alt/10;
-		p.payload.nodePosition.positions[0].hexaseconds = 0;
+		p.payload.nodePosition.latitude = gpsv.lat;
+		p.payload.nodePosition.longitude = gpsv.lon;
+		p.payload.nodePosition.elevation = gpsv.alt/10;
+		p.payload.nodePosition.hexaseconds = 0;
 		
 		p.payload.nodePosition.last_seq_num = 0;
 		
