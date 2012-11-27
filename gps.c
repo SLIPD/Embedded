@@ -31,6 +31,7 @@ uint8_t nmea_buffer[256];
 uint8_t localBuff[256];
 GPS_Vector_Type lastRead;
 GPS_Vector_Type toSend;
+GPS_Vector_Type waypoint;
 bool sendNow;
 bool haveRead;
 /* prototypes */
@@ -42,6 +43,9 @@ void GPS_Init() {
     lastRead.alt = 0;
     lastRead.lat = 0;
     lastRead.lon = 0;
+    waypoint.lat = 0;
+    waypoint.lon = 0;
+    waypoint.alt = 0;
     int nextRTC;
     sendNow = false;
     seqNumber = 0;
@@ -369,6 +373,18 @@ void GPS_GetLastPosition(GPS_Vector_Type *vector){
     vector->lat = lastRead.lat;
     vector->lon = lastRead.lon;
             
+}
+
+void GPS_GetWayPoint(GPS_Vector_Type *vecto){
+    vecto->alt = waypoint.alt;
+    vecto->lat = waypoint.lat;
+    vecto->lon = waypoint.lon;
+}
+
+
+void Update_WayPoint(uint32_t lati, uint32_t longi ){
+    waypoint.lat = lati;
+    waypoint.lon = longi;
 }
 
 
