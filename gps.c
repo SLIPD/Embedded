@@ -32,6 +32,7 @@ uint8_t nmea_buffer[256];
 uint8_t localBuff[256];
 GPS_Vector_Type lastRead;
 GPS_Vector_Type toSend;
+GPS_Vector_Type waypoint;
 bool sendNow;
 bool haveRead;
 /* prototypes */
