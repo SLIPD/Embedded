@@ -29,7 +29,7 @@ void GPS_Init();
 bool GPS_Read(GPS_Vector_Type *vector);
 void GPS_GetLastPosition(GPS_Vector_Type *vector);
 void  GPS_Main();
-void GPS_GetFix();
+bool GPS_GetFix();
 void switchMode();
 void GPS_GetPrecision(uint8_t target_precision);
 uint8_t nmea_generateChecksum(char *strPtr) ;
