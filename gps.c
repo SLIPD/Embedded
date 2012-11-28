@@ -1,3 +1,4 @@
+
 #include "gps.h"
 
 #include "stdint.h"
@@ -19,7 +20,7 @@ const static uint8_t sirf_command_NMEA[] = {0xA0, 0xA2, 0x00, 0x18, 0x81, 0x02, 
 const static uint8_t sirf_command_MPM[] = {0xA0, 0xA2, 0x00, 0x06, 0xDA, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0xDC, 0xB0, 0xB3};
 const static uint8_t sirf_command_PTF[] = {0xA0, 0xA2, 0x00, 0x0E, 0xDA, 0x04, 0x00, 0x00, 0x00, 0x78, 0x00, 0x00, 0x0F, 0xA0, 0x00, 0x02, 0xBF, 0x20, 0x02, 0xE6, 0xB0, 0xB3};
 const static uint8_t sirf_command_fullPowerMode = {0xA0, 0xA2, 0x00, 0x02, 0xDA, 0x00, 0x00, 0xDA, 0xB0, 0xB3};
-// this returns a single binary byte that is the checksum 
+// this returns a single binary byte that is the checksum
 
 /* variables */
 uint32_t last_mode_change = 0;
@@ -29,10 +30,8 @@ uint32_t nmea_msg_rcvd = 0;
 uint16_t seqNumber;
 uint8_t nmea_buffer[256];
 uint8_t localBuff[256];
-
 GPS_Vector_Type lastRead;
 GPS_Vector_Type toSend;
-GPS_Vector_Type waypoint;
 bool sendNow;
 bool haveRead;
 /* prototypes */
@@ -40,14 +39,10 @@ void switchMode();
 
 /* functions */
 void GPS_Init() {
-
     haveRead = false;
     lastRead.alt = 0;
     lastRead.lat = 0;
     lastRead.lon = 0;
-    waypoint.lat = 0;
-    waypoint.lon = 0;
-    waypoint.alt = 0;
     int nextRTC;
     sendNow = false;
     seqNumber = 0;
@@ -83,7 +78,7 @@ void GPS_Init() {
     LEUART1->ROUTE = LEUART_ROUTE_LOCATION_LOC1
             | LEUART_ROUTE_TXPEN | LEUART_ROUTE_RXPEN;
 
-    // config wakeup pin 
+    // config wakeup pin
     GPIO->P[4].DOUT &= ~(1 << 12);
     GPIO->P[4].MODEH = (GPIO->P[4].MODEH & ~_GPIO_P_MODEH_MODE12_MASK) | GPIO_P_MODEH_MODE12_INPUT;
 
@@ -92,22 +87,40 @@ void GPS_Init() {
     GPIO->P[4].MODEH = (GPIO->P[4].MODEH & ~_GPIO_P_MODEH_MODE13_MASK) | GPIO_P_MODEH_MODE13_PUSHPULL;
 
 
-
-    //LEUART1->CMD = LEUART_CMD_CLEARRX | LEUART_CMD_CLEARTX;
-    //requests the following messages
-    //GSV , RMC , and (no gga but can change that)
-    leuart_send_array(LEUART1, sirf_command_NMEA, sizeof (sirf_command_NMEA));
-    leuart_send_array(LEUART1, sirf_command_NMEA, sizeof (sirf_command_NMEA));
-    leuart_send_array(LEUART1, sirf_command_NMEA, sizeof (sirf_command_NMEA));
-    leuart_send_array(LEUART1, sirf_command_NMEA, sizeof (sirf_command_NMEA));
     RTC_CounterReset();
+    while (RTC->CNT < 65536);
+    leuart_send_array(LEUART1, sirf_command_NMEA, sizeof (sirf_command_NMEA));
+    leuart_send_array(LEUART1, sirf_command_NMEA, sizeof (sirf_command_NMEA));
+    leuart_send_array(LEUART1, sirf_command_NMEA, sizeof (sirf_command_NMEA));
+    leuart_send_array(LEUART1, sirf_command_NMEA, sizeof (sirf_command_NMEA));
+    //uart_setbaud(LEUART1,4800);
+    while (RTC->CNT < (65536 + 9 * (16000)));
 
+    nmea_sendmessage(LEUART1, "PSRF117,16");
+
+
+
+    while (RTC->CNT < (65536 + 10 * (16000)));
+
+    /* Pulse GPS on/off signal for 500 ms */
+    nextRTC = RTC->CNT + 8000;
+    GPIO->P[4].DOUT = 1 << 13;
+    while (RTC->CNT < nextRTC);
+    GPIO->P[4].DOUT = 0;
+
+
+    RTC_CounterReset();
     while (!(GPIO->P[4].DIN & (1 << 12))) {
         TRACE("SWITCHING MODE");
         switchMode();
     }
-    TRACE("ENABLING GPS INTERRUPT\n");
-    
+    //turn off all other messages
+    nmea_sendmessage(LEUART1, "PSRF103,00,00,00,01");
+    nmea_sendmessage(LEUART1, "PSRF103,03,00,00,01");
+    nmea_sendmessage(LEUART1, "PSRF103,04,00,00,01");
+
+    //gsa messages every second
+    nmea_sendmessage(LEUART1, "PSRF103,02,00,01,01");
     TRACE("GPS INIT COMPLETE\n");
 
 
@@ -143,6 +156,63 @@ void switchMode() {
 
 }
 
+uint8_t nmea_generateChecksum(char *strPtr) {
+    int p;
+    char c;
+    uint8_t chksum;
+
+    c = strPtr[0]; // get first chr
+    chksum = c;
+    p = 1;
+    while (c != 0x00) {
+        c = strPtr[p]; // get next chr
+        if (c != 0x00) {
+            chksum = chksum ^ c;
+        }
+        p++;
+    }
+
+    return chksum;
+}
+
+void leuart_send_str(LEUART_TypeDef *uart, char *msg) {
+    uint8_t c;
+    while ((c = *(msg++)) != 0) {
+        while (!(uart->STATUS & LEUART_STATUS_TXBL));
+        uart->TXDATA = c;
+    }
+}
+
+
+// send nmea message with checksum. 0 terminated string not including $,*,CHK,CRLF
+
+void nmea_sendmessage(LEUART_TypeDef *uart, char *msg) {
+    uint8_t chksum;
+    uint8_t c;
+    chksum = nmea_generateChecksum(msg);
+    while (!(uart->STATUS & LEUART_STATUS_TXBL));
+    uart->TXDATA = '$';
+    leuart_send_str(uart, msg);
+    while (!(uart->STATUS & LEUART_STATUS_TXBL));
+    uart->TXDATA = '*';
+    while (!(uart->STATUS & LEUART_STATUS_TXBL));
+    if (((chksum & 0xF0) >> 4) > 9) {
+        uart->TXDATA = ((chksum & 0xF0) >> 4) - 10 + 'A';
+    } else {
+        uart->TXDATA = ((chksum & 0xF0) >> 4) + '0';
+    }
+    while (!(uart->STATUS & LEUART_STATUS_TXBL));
+    if (((chksum & 0x0F)) > 9) {
+        uart->TXDATA = ((chksum & 0x0F)) - 10 + 'A';
+    } else {
+        uart->TXDATA = ((chksum & 0x0F)) + '0';
+    }
+    while (!(uart->STATUS & LEUART_STATUS_TXBL));
+    uart->TXDATA = '\r';
+    while (!(uart->STATUS & LEUART_STATUS_TXBL));
+    uart->TXDATA = '\n';
+}
+
 void leuart_send_array(LEUART_TypeDef *uart, uint8_t *msg, uint32_t len) {
     for (int i = 0; i < len; i++) {
         while (!(uart->STATUS & LEUART_STATUS_TXBL));
@@ -162,175 +232,158 @@ void LEUART1_IRQHandler(void) {
     if (nmea_len >= 253) {
         nmea_len = 0;
     }
-		
+
     nmea_buffer[nmea_len++] = b;
-    
-    //send it to bypass problems with trace...
-    //UART1->TXDATA = b;
-    
+
+
+
     if (b == '\n') {
-			nmea_buffer[nmea_len++] = '\0';
-			//TRACE(nmea_buffer);
-      nmea_msg_rcvd = 1;
+        nmea_buffer[nmea_len++] = '\0';
+        //TRACE(nmea_buffer);
+        nmea_msg_rcvd = 1;
     }
 }
 
 /**
  * busy waits until 3D fix is achieved
  */
-void GPS_GetFix() {
+bool GPS_GetFix() {
 
-    while (fix == 0) {
+    if (fix == 1) {
+        return true;
+    }
+
+    if (nmea_msg_rcvd) {
+        INT_Disable();
+        memcpy(localBuff, nmea_buffer, 256);
+        INT_Enable();
+
+        if ((localBuff[4] == 'S') && (localBuff[5] == 'A')) {
+
+            switch (localBuff[9]) {
+                case '1':
+                    TRACE("no fix \n");
+                    LED_Toggle(3);
+                    return false;
+                    break;
+                case '2':
+                    //TRACE("2d fix ");
+                    return false;
+                    break;
+                case '3':
+                    TRACE("FULL 3D FIX");
+                    LED_Off(3);
+                    LED_On(1);
+                    fix = 1;
+                    //gga every second, turn others off
+                    nmea_sendmessage(LEUART1, "PSRF103,00,00,01,01");
+                    nmea_sendmessage(LEUART1, "PSRF103,03,00,00,01");
+                    nmea_sendmessage(LEUART1, "PSRF103,04,00,00,01");
+#ifndef BASESTATION
+                    //turn off gsa messages if we are not the basestation
+                    nmea_sendmessage(LEUART1, "PSRF103,02,00,00,01");
+#endif
+                    return true;
+            }
+
+        }
+        nmea_msg_rcvd = 0;
+
+    }else {
+    return false;
+} 
+
+
+
+
+
+void GPS_GetPrecision(uint8_t target_precision) {
+
+    bool precision_reached = false;
+    while (!precision_reached) {
 
         if (nmea_msg_rcvd) {
             INT_Disable();
             memcpy(localBuff, nmea_buffer, 256);
             INT_Enable();
 
-            if ((localBuff[4] == 'S') && (localBuff[5] == 'A')) {
+            uint8_t precision = 0;
+            uint8_t msg_type[6];
 
-                switch (localBuff[9]) {
-                    case '1':
-                        TRACE("no fix \n");
-                        LED_Toggle(RED);
-                        break;
-                    case '2':
-                        //TRACE("2d fix ");
-                        break;
-                    case '3':
-                        TRACE("FULL 3D FIX");
-												LED_On(RED);
-                        fix = 1;
-                }
-								
+            memcpy(msg_type, &localBuff[1], 5);
+
+            msg_type[5] = 0;
+
+            char *msg_req_type = "GPGSA";
+
+            if (strcmp((char*) msg_type, msg_req_type) == 0) {
+
+                int commas = 0;
+                int x = 0;
+                uint8_t decimal_places = 0xFF;
+
+                do {
+                    if (localBuff[x] == ',') {
+                        commas++;
+                        x++;
+                        continue;
+                    }
+                    switch (commas) {
+                        case 15:
+
+                            if (decimal_places != 0xFF) {
+                                decimal_places += 1;
+                                if (decimal_places > 1) {
+                                    break;
+                                }
+                            }
+
+                            if (localBuff[x] == '.') {
+                                decimal_places = 0;
+
+                            } else {
+                                precision *= 10;
+                                precision += (localBuff[x] - '0');
+
+                            }
+
+                            break;
+                    }
+                    x++;
+                } while (localBuff[x] != '\n');
+
+                if (precision < target_precision && precision > 0)
+                    precision_reached = true;
+
             }
-						
-						TRACE(localBuff);
+
             nmea_msg_rcvd = 0;
-
         }
+
     }
-    
-    
+
 }
 
-void GPS_GetPrecision(uint8_t target_precision)
-{
-	
-	bool precision_reached = false;
-	while(!precision_reached)
-	{
-		
-		if (nmea_msg_rcvd)
-		{
-			INT_Disable();
-			memcpy(localBuff, nmea_buffer, 256);
-			INT_Enable();
-			
-			uint8_t precision = 0;
-			uint8_t msg_type[6];
-			
-			memcpy(msg_type, &localBuff[1], 5);
-			
-			msg_type[5] = 0;
-			
-			char *msg_req_type = "GPGSA";
-			
-			if (strcmp((char*)msg_type,msg_req_type) == 0)
-			{
-				
-				int commas = 0;
-				int x = 0;
-				uint8_t decimal_places = 0xFF;
-				
-				do
-				{
-					if (localBuff[x] == ',') {
-							commas++;
-							x++;
-							continue;
-					}
-					switch(commas)
-					{
-						case 15:
-							
-							if (decimal_places != 0xFF)
-							{
-								decimal_places += 1;
-								if (decimal_places > 1)
-								{
-									break;
-								}
-							}
-							
-							if (localBuff[x] == '.')
-							{
-								decimal_places = 0;
-								
-							}
-							else
-							{
-								precision *= 10;
-								precision += (localBuff[x] - '0');
-								
-							}
-							
-							break;
-					}
-					x++;
-				}
-				while (localBuff[x] != '\n');
-				
-				if (precision < target_precision)
-					precision_reached = true;
-				
-				TRACE("PRECISION: %i\n", precision);
-				
-			}
-			
-			nmea_msg_rcvd = 0;
-		}
-		
-	}
-	
-	LED_Off(RED);
-	
-}
 /**
  * returns last position... can only be done after gps_read
  * @param vector
  */
-void GPS_GetLastPosition(GPS_Vector_Type *vector){
-    if (!haveRead){
+void GPS_GetLastPosition(GPS_Vector_Type *vector) {
+    if (!haveRead) {
         GPS_Read(vector);
     }
     vector->alt = lastRead.alt;
     vector->lat = lastRead.lat;
     vector->lon = lastRead.lon;
-            
+
 }
-
-void GPS_GetWayPoint(GPS_Vector_Type *vecto){
-    vecto->alt = waypoint.alt;
-    vecto->lat = waypoint.lat;
-    vecto->lon = waypoint.lon;
-}
-
-
-void Update_WayPoint(uint32_t lati, uint32_t longi ){
-    waypoint.lat = lati;
-    waypoint.lon = longi;
-}
-
-
-
 
 /**
  * reads in position data after we have got a fix
  * only call after calling GPS_GetFix
  * Don't call repeatedly outside of gps.c
  */
-bool GPS_Read(GPS_Vector_Type *vector) { 
+bool GPS_Read(GPS_Vector_Type *vector) {
     haveRead = true;
     bool updated = false;
     if (nmea_msg_rcvd) {
@@ -338,7 +391,7 @@ bool GPS_Read(GPS_Vector_Type *vector) {
             INT_Disable();
             memcpy(localBuff, nmea_buffer, 256);
             nmea_msg_rcvd = 0;
-            INT_Enable();    
+            INT_Enable();
             //we have a fix so get coords
             //parse data to get gps coords
             //checking gga messages
@@ -373,25 +426,24 @@ bool GPS_Read(GPS_Vector_Type *vector) {
                             //read longitude into buffer
                             while (x < (start + 8)) {
                                 latBuff[bufCount] = localBuff[x];
-                                break;
-                            case 3:
-                                //n/s
+                                bufCount++;
+                                x++;
+                            }
+                            latBuff[bufCount] = localBuff[x];
+                            break;
+                        case 3:
+                            //n/s
 
-                                if (localBuff[x] == 'S')
-                                    north = -1;
-                                break;
-                            case 4:
-                                //long
-                                start = x;
-                                bufCount = 0;
-                                //read longitude into buffer
-                                while (x < (start + 9)) {
-                                    longBuff[bufCount] = localBuff[x];
-                                    bufCount++;
-                                    x++;
-                                }
+                            if (localBuff[x] == 'S')
+                                north = -1;
+                            break;
+                        case 4:
+                            //long
+                            start = x;
+                            bufCount = 0;
+                            //read longitude into buffer
+                            while (x < (start + 9)) {
                                 longBuff[bufCount] = localBuff[x];
-
                                 bufCount++;
                                 x++;
                             }
@@ -447,40 +499,9 @@ bool GPS_Read(GPS_Vector_Type *vector) {
             }
 
 
-                        x++;
-                    } while (localBuff[x] != '\n');
-                    //print the long and latitude
-                    //                    TRACE("\n");
-                    //                    TRACE("long : ");
-                    //                    TRACE(longBuff);
-                    //                    TRACE("\n");
-                    //                    TRACE("lat : ");
-                    //                    TRACE(latBuff);
-                    //                    TRACE("\n");
-
-
-                    //convert to integers
-                    longBuff[5] = "\0";
-                    latBuff[4] = "\0";
-                    int32_t longitude = 10000 * atoi(longBuff);
-                    longitude += atoi(&longBuff[6]);
-                    longitude = longitude*east;
-                    int32_t latitude = 10000 * atoi(latBuff);
-                    latitude += atoi(&latBuff[5]);
-                    latitude = latitude*north;
-
-                    vector->lat = latitude;
-                    vector->lon = longitude;
-                    //replace this later
-                    vector->alt = 0;
-                }
-            }
-            nmea_msg_rcvd = 0;
-
         }
     }
 
-    
 
 
     vector->alt = lastRead.alt;
@@ -491,8 +512,9 @@ bool GPS_Read(GPS_Vector_Type *vector) {
 }
 
 //creates packets and sends on second iteration
-void  GPS_Main(){
-    if (sendNow){
+
+void GPS_Main() {
+    if (sendNow) {
         sendNow = false;
         MessageType_NodePosition nodePos;
         nodePos.elevation = toSend.alt;
@@ -502,12 +524,12 @@ void  GPS_Main(){
         Packet pack;
         pack.destinationId = 0x00;
         pack.msgType = 0x01;
-        pack.payload.nodePosition = nodePos;             
-        RADIO_Send((uint8_t*) &pack);
+        pack.payload.nodePosition = nodePos;
+        RADIO_Send((uint8_t*) & pack);
         seqNumber++;
-        
-    }else if (GPS_Read(&toSend)){
+
+    } else if (GPS_Read(&toSend)) {
         sendNow = true;
     }
-    
+
 }
