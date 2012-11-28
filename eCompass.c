@@ -98,7 +98,7 @@ float ieCompass(int16_t x, int16_t y)
     // Convert radians to degrees for readability.
     float headingDegrees = heading * 180/PI; 
     
-    headingDegrees = headingDegrees + 270;
+    headingDegrees = headingDegrees + 110;
     if (headingDegrees > 360) headingDegrees -= 360;
     
     return headingDegrees;
