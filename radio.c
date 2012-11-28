@@ -444,7 +444,8 @@ void RADIO_GetID()
 				incoming.destinationId == 0xFF &&
 				incoming.msgType == 0x00 &&
 				incoming.payload.identification.id0 == *((uint32_t*)(0xFE081F0)) &&
-				incoming.payload.identification.id1 == *((uint32_t*)(0xFE081F4)))
+				incoming.payload.identification.id1 == *((uint32_t*)(0xFE081F4))
+			)
 			{
 				
 				// store tdma details

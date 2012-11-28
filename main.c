@@ -167,34 +167,17 @@ int main()
 	// radio get id
 	RADIO_GetID();
 
-	/*
-	// display getting fix message
-	displayMessageTop.message = ("Getting Fix :)");
-	DISPLAY_MessageWrite(&displayMessageTop);
-  */
-  
-	// wait for gps initial fix
-	//GPS_GetFix();
-        
-  /*
-	// display getting fix message
-	displayMessageTop.message = ("Fix Found :D");
-	DISPLAY_MessageWrite(&displayMessageTop);
-	*/
-
-	TRACE(":FIX FOUND\n");
-
 	// enable tdma
 	RADIO_EnableTDMA();
-
+	
 	Packet p;
-
+	
 	while(1)
 	{
 
 		// handle radio msgs
 		RADIO_HandleMessages();
-
+		
 		if (RADIO_Recv((uint8_t*)&p))
 		{
 			switch (p.msgType)
@@ -220,6 +203,7 @@ int main()
 					{
 					case 'P':
 						{
+							
 							TRACE("PING - PONG\n");
 						
 							Packet pong;
@@ -228,16 +212,20 @@ int main()
 							pong.ttl = 1;
 							encodeDataString("$Q",pong.payload.message.message);
 							RADIO_Send((uint8_t*)&pong);
+							
 						}
 						break;
 					case 'N':
 						{
 							
-							displayMessageBottom.message = "Getting GPS Fix";
-							DISPLAY_MessageWrite(&displayMessageBottom);
-							name_set = true;
-							// eCompass init
-							eCompassInit();
+							if (!name_set)
+							{
+								displayMessageTop.message = "Getting GPS fix";
+								DISPLAY_MessageWrite(&displayMessageTop);
+								name_set = true;
+								// eCompass init
+								eCompassInit();
+							}
 							
 						}
 						break;
@@ -255,14 +243,6 @@ int main()
 			
 			}
 			
-			if (p.msgType == 0x03 && p.payload.message.message[0] == 0x01)
-			{
-				p.destinationId = 0x00;
-				p.ttl = 1;
-				p.payload.message.message[0] = 0x02;
-				RADIO_Send((uint8_t*)&p);
-				LED_Toggle(RED);
-			}
 		}
 		
 		// GPS MAIN
@@ -273,11 +253,7 @@ int main()
 			if (count++ % 1000)
 				updateHeading();
 		}
-
-		// display update
 		
-   
-		// sleep until irq
 		
 	}
 

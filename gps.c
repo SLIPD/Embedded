@@ -519,15 +519,14 @@ void GPS_Main() {
 	
     if (sendNow) {
         sendNow = false;
-        MessageType_NodePosition nodePos;
-        nodePos.elevation = toSend.alt;
-        nodePos.latitude = toSend.lat;
-        nodePos.longitude = toSend.lon;
-        nodePos.last_seq_num = seqNumber;
-        Packet pack;
+				Packet pack;
+        pack.payload.nodePosition.elevation = toSend.alt;
+        pack.payload.nodePosition.latitude = toSend.lat;
+        pack.payload.nodePosition.longitude = toSend.lon;
+        pack.payload.nodePosition.last_seq_num = seqNumber;
+        
         pack.destinationId = 0x00;
         pack.msgType = 0x01;
-        pack.payload.nodePosition = nodePos;
         RADIO_Send((uint8_t*) & pack);
         seqNumber++;
 

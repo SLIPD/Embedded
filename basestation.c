@@ -1,3 +1,5 @@
+#define TEST
+
 #include "basestation.h"
 
 #include <string.h>
@@ -89,7 +91,7 @@ void basestation_main()
 		position.payload.nodePosition.elevation = gps_position.alt;
 		
 		TRACE_SendPayload((uint8_t*)&position,32);
-	
+		
 	#endif
 	
 	RADIO_Init();
