@@ -2,7 +2,7 @@
 
 #include "stdint.h"
 #include "string.h"
-
+#include "stdbool.h"
 #include "efm32.h"
 
 #include "efm32_gpio.h"
@@ -10,9 +10,10 @@
 #include "efm32_rtc.h"
 #include "efm32_cmu.h"
 #include "efm32_int.h"
-
 #include "trace.h"
 #include "led.h"
+#include "packets.h"
+#include "radio.h"
 
 const static uint8_t sirf_command_NMEA[] = {0xA0, 0xA2, 0x00, 0x18, 0x81, 0x02, 0x00, 0x01, 0x00, 0x01, 0x00, 0x01, 0x01, 0x01, 0x01, 0x01, 0x00, 0x01, 0x00, 0x01, 0x00, 0x00, 0x01, 0x01, 0x00, 0x00, 0x12, 0xC0, 0x01, 0x60, 0xB0, 0xB3};
 const static uint8_t sirf_command_MPM[] = {0xA0, 0xA2, 0x00, 0x06, 0xDA, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0xDC, 0xB0, 0xB3};
@@ -25,15 +26,31 @@ uint32_t last_mode_change = 0;
 uint32_t fix = 0;
 uint32_t nmea_len = 0;
 uint32_t nmea_msg_rcvd = 0;
+uint16_t seqNumber;
 uint8_t nmea_buffer[256];
 uint8_t localBuff[256];
 
+GPS_Vector_Type lastRead;
+GPS_Vector_Type toSend;
+GPS_Vector_Type waypoint;
+bool sendNow;
+bool haveRead;
 /* prototypes */
 void switchMode();
 
 /* functions */
 void GPS_Init() {
 
+    haveRead = false;
+    lastRead.alt = 0;
+    lastRead.lat = 0;
+    lastRead.lon = 0;
+    waypoint.lat = 0;
+    waypoint.lon = 0;
+    waypoint.alt = 0;
+    int nextRTC;
+    sendNow = false;
+    seqNumber = 0;
     fix = 0;
     LEUART_Init_TypeDef leuart1Init = {
         .enable = leuartEnable, /* Activate data reception on LEUn_TX pin. */
@@ -279,57 +296,82 @@ void GPS_GetPrecision(uint8_t target_precision)
 	LED_Off(RED);
 	
 }
+/**
+ * returns last position... can only be done after gps_read
+ * @param vector
+ */
+void GPS_GetLastPosition(GPS_Vector_Type *vector){
+    if (!haveRead){
+        GPS_Read(vector);
+    }
+    vector->alt = lastRead.alt;
+    vector->lat = lastRead.lat;
+    vector->lon = lastRead.lon;
+            
+}
+
+void GPS_GetWayPoint(GPS_Vector_Type *vecto){
+    vecto->alt = waypoint.alt;
+    vecto->lat = waypoint.lat;
+    vecto->lon = waypoint.lon;
+}
+
+
+void Update_WayPoint(uint32_t lati, uint32_t longi ){
+    waypoint.lat = lati;
+    waypoint.lon = longi;
+}
+
+
+
 
 /**
  * reads in position data after we have got a fix
  * only call after calling GPS_GetFix
+ * Don't call repeatedly outside of gps.c
  */
-void GPS_Read(GPS_Vector_Type *vector) {
-    int gotLocation = 0;
+bool GPS_Read(GPS_Vector_Type *vector) { 
+    haveRead = true;
+    bool updated = false;
+    if (nmea_msg_rcvd) {
+        if (fix == 1) {
+            INT_Disable();
+            memcpy(localBuff, nmea_buffer, 256);
+            nmea_msg_rcvd = 0;
+            INT_Enable();    
+            //we have a fix so get coords
+            //parse data to get gps coords
+            //checking gga messages
+            if (localBuff[1] == 'G' && localBuff[3] == 'G' && localBuff[4] == 'G') {
+                //counter for number of commas (used for parsing)
+                int commas = 0;
+                int x = 0;
+                //north/south indicator
+                int north = 1;
+                //east/west indicator
+                int east = 1;
+                //
+                int altCount = 0;
+                uint8_t longBuff[11] = "dddmm.mmmm";
+                uint8_t latBuff[10] = "ddmm.mmmm";
+                uint8_t altBuffer[16] = "";
 
-    while (gotLocation == 0) {
-        if (nmea_msg_rcvd) {
-
-            if (fix == 1) {
-                INT_Disable();
-                memcpy(localBuff, nmea_buffer, 256);
-                INT_Enable();
-                //we have a fix so get coords
-                //parse data to get gps coords
-                //checking gga messages
-                if (localBuff[1] == 'G' && localBuff[3] == 'G' && localBuff[4] == 'G') {
-                    //counter for number of commas (used for parsing)
-                    gotLocation = 1;
-                    int commas = 0;
-                    int x = 0;
-                    //north/south indicator
-                    int north = 1;
-                    //east/west indicator
-                    int east = 1;
-                    //
-                    uint8_t longBuff[11] = "dddmm.mmmm";
-                    uint8_t latBuff[10] = "ddmm.mmmm";
-
-                    //variables used for counting lat/long into buffer
-                    int start, bufCount;
-                    do {
-                        //count which argument we are at
-                        if (localBuff[x] == ',') {
-                            commas++;
-                            x++;
-                            continue;
-                        }
-                        switch (commas) {
-                            case 2:
-                                //long
-                                start = x;
-                                bufCount = 0;
-                                //read longitude into buffer
-                                while (x < (start + 8)) {
-                                    latBuff[bufCount] = localBuff[x];
-                                    bufCount++;
-                                    x++;
-                                }
+                //variables used for counting lat/long into buffer
+                int start, bufCount;
+                do {
+                    //count which argument we are at
+                    if (localBuff[x] == ',') {
+                        commas++;
+                        x++;
+                        continue;
+                    }
+                    switch (commas) {
+                        case 2:
+                            //long
+                            start = x;
+                            bufCount = 0;
+                            //read longitude into buffer
+                            while (x < (start + 8)) {
                                 latBuff[bufCount] = localBuff[x];
                                 break;
                             case 3:
@@ -349,58 +391,60 @@ void GPS_Read(GPS_Vector_Type *vector) {
                                     x++;
                                 }
                                 longBuff[bufCount] = localBuff[x];
-                                break;
-                            case 5:
-                                //e/w
-                                if (localBuff[x] == 'W')
-                                    east = -1;
-                                break;
-                            case 6:
-                                //fix indicator
-                                if ((localBuff[x]) == '0') {
-                                    TRACE("FIX LOST");
-                                    //need to do something here
-                                    fix = 0;
-                                }
-                                break;
-                            //HERE BE DANGER
-                            //case 9:
-                                
-                                //altitude
-//                                int altcounter;
-//                                int altsize = 0;
-//                                altcounter = x;
-//                                int start = x;
-//                                int indexOfPoint = -1;
-//                                while (nmea_buffer[altcounter] != ',') {
-//                                    altsize++;
-//                                }
-//                                int8_t altBuffer[altsize];
-//                                while (x < (start + (altsize - 1))) {
-//                                    altBuffer[bufCount] = localBuff[x];
-//                                    if (altBuffer[bufCount] == '.') {
-//                                        indexOfPoint = bufCount;
-//                                    }
-//                                    bufCount++;
-//                                    x++;
-//                                }
-//                                altBuffer[bufCount] = localBuff[x];
-//                                int32_t altitude;
-//                                //convert to an int
-//                                if (indexOfPoint != '-1') {
-//                                    
-//                                    altBuffer[indexOfPoint] = "\0";
-//                                    altitude = 100 * atoi(altBuffer);
-//                                    altitude += 10 * atoi(&altBuffer[indexOfPoint + 1]); //assume only 1 d.p
-//                                } else {
-//                                    altitude = 100 * atoi(altBuffer);
-//                                }
-//                                vector.alt = altitude;
-//                                break;
-                                //HERE ENDs THE DANGER
 
-                        }
-                        
+                                bufCount++;
+                                x++;
+                            }
+                            longBuff[bufCount] = localBuff[x];
+                            break;
+                        case 5:
+                            //e/w
+                            if (localBuff[x] == 'W')
+                                east = -1;
+                            break;
+                        case 6:
+                            //fix indicator
+                            if ((localBuff[x]) == '0') {
+                                TRACE("FIX LOST");
+                                //need to do something here
+                                fix = 0;
+                            }
+                            break;
+                        case 9:
+                            //altitude with 1 decimal place
+                            if (localBuff[x] != '.') {
+                                altBuffer[altCount] = localBuff[x];
+                                altCount++;
+                            }
+
+
+
+                    }
+
+
+
+                    x++;
+                } while (localBuff[x] != '\n');
+
+
+                //convert to integers
+                longBuff[5] = "\0";
+                latBuff[4] = "\0";
+                altBuffer[altCount] = "\0";
+                int16_t altit = atoi(altBuffer);
+
+                int32_t longitude = 10000 * atoi(longBuff);
+                longitude += atoi(&longBuff[6]);
+                longitude = longitude*east;
+                int32_t latitude = 10000 * atoi(latBuff);
+                latitude += atoi(&latBuff[5]);
+                latitude = latitude*north;
+
+                lastRead.alt = altit;
+                lastRead.lat = latitude;
+                lastRead.lon = longitude;
+                updated = true;
+            }
 
 
                         x++;
@@ -435,4 +479,35 @@ void GPS_Read(GPS_Vector_Type *vector) {
 
         }
     }
+
+    
+
+
+    vector->alt = lastRead.alt;
+    vector->lat = lastRead.lat;
+    vector->lon = lastRead.lon;
+    return updated;
+
+}
+
+//creates packets and sends on second iteration
+void  GPS_Main(){
+    if (sendNow){
+        sendNow = false;
+        MessageType_NodePosition nodePos;
+        nodePos.elevation = toSend.alt;
+        nodePos.latitude = toSend.lat;
+        nodePos.longitude = toSend.lon;
+        nodePos.last_seq_num = seqNumber;
+        Packet pack;
+        pack.destinationId = 0x00;
+        pack.msgType = 0x01;
+        pack.payload.nodePosition = nodePos;             
+        RADIO_Send((uint8_t*) &pack);
+        seqNumber++;
+        
+    }else if (GPS_Read(&toSend)){
+        sendNow = true;
+    }
+    
 }

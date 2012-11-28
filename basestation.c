@@ -17,37 +17,80 @@ bool basestation_handlePacket(Packet *p);
 void basestation_main()
 {
 	
-	LED_On(GREEN);
-	LED_On(RED);
-	LED_On(BLUE);
+	#ifdef TEST
+		
+		LED_On(GREEN);
+		LED_On(RED);
+		LED_On(BLUE);
+		
+		uint8_t recv;
+		do
+		{
+			while (!(UART1->STATUS & UART_STATUS_RXDATAV));
+			recv = UART1->RXDATA;
+		}
+		while (recv != '#');
+		
+		LED_Off(RED);
+		for (int i = 0; i < 100000; i++);
+		
+		while (!(UART1->STATUS & UART_STATUS_TXBL));
+		UART1->TXDATA = '*';
+		while (!(UART1->STATUS & UART_STATUS_TXC));
+		
+		uint8_t tmp_packet[32];
+		
+		for (int i = 0; i < 32; i++)
+		{
+			while (!(UART1->STATUS & UART_STATUS_RXDATAV));
+			tmp_packet[i] = UART1->RXDATA;
+		}
+		
+		for (int i = 0; i < 100000; i++);
+		LED_Off(BLUE);
+		
+		TRACE_SendPayload(tmp_packet,32);
+		
+	#else
 	
-	uint8_t recv;
-	do
-	{
-		while (!(UART1->STATUS & UART_STATUS_RXDATAV));
-		recv = UART1->RXDATA;
-	}
-	while (recv != '#');
+		LED_On(GREEN);
+		LED_On(RED);
+		LED_On(BLUE);
+		
+		uint8_t recv;
+		do
+		{
+			while (!(UART1->STATUS & UART_STATUS_RXDATAV));
+			recv = UART1->RXDATA;
+		}
+		while (recv != '*');
+		
+		LED_Off(RED);
+		for (int i = 0; i < 100000; i++);
+		
+		while (!(UART1->STATUS & UART_STATUS_TXBL));
+		UART1->TXDATA = '*';
+		while (!(UART1->STATUS & UART_STATUS_TXC));
+		
+		Packet position;
+		
+		while (!GPS_GetFix());
+		
+		GPS_Vector_Type gps_position;
+		
+		while (!GPS_Read(&gps_position));
+		
+		position.originId = 0x00;
+		position.destinationId = 0x00;
+		position.ttl = 1;
+		position.msgType = 0x01;
+		position.payload.nodePosition.latitude = gps_position.lat;
+		position.payload.nodePosition.longitude = gps_position.lon;
+		position.payload.nodePosition.elevation = gps_position.alt;
+		
+		TRACE_SendPayload(position,32);
 	
-	LED_Off(RED);
-	for (int i = 0; i < 100000; i++);
-	
-	while (!(UART1->STATUS & UART_STATUS_TXBL));
-	UART1->TXDATA = '*';
-	while (!(UART1->STATUS & UART_STATUS_TXC));
-	
-	uint8_t tmp_packet[32];
-	
-	for (int i = 0; i < 32; i++)
-	{
-		while (!(UART1->STATUS & UART_STATUS_RXDATAV));
-		tmp_packet[i] = UART1->RXDATA;
-	}
-	
-	for (int i = 0; i < 100000; i++);
-	LED_Off(BLUE);
-	
-	TRACE_SendPayload(tmp_packet,32);
+	#endif
 	
 	RADIO_Init();
 	RADIO_Enable(OFF);

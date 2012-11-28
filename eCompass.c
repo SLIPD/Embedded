@@ -101,3 +101,22 @@ float ieCompass(int16_t x, int16_t y)
     
     return headingDegrees;
 }
+
+float getBearing(int32_t lat1, int32_t long1, int32_t lat2, int32_t long2)
+{
+    int32_t vecX = lat2 - lat1;
+    int32_t vecY = long2 - long1;
+    
+    float absoluteVec = sqrt((vecX * vecX) + (vecY * vecY));
+    
+    float bearing = acos((float)vecY/absoluteVec);
+	
+    bearing = bearing * 180 / PI;
+	
+    if(vecX < 0)
+    {
+            bearing = fabs(bearing - 360);
+    }
+    
+    return bearing;
+}

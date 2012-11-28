@@ -37,6 +37,7 @@ Mag_Vector_Type         magReading;
 Accel_Vector_Type       accelReading;
 uint8_t buf[6];
 char str[32];
+bool getGPSFix = false;
 
 // Prototypes
 void initClocks();
@@ -196,25 +197,36 @@ int main()
 						debug[32];
 					decodeData(p.payload.message.message, msg, debug);
 					
-					if (strcmp(debug,"PING") == 0)
+					switch (debug)
 					{
-						TRACE("PING - PONG\n");
+					case 'P':
+						{
+							TRACE("PING - PONG\n");
 						
-						Packet pong;
-						pong.destinationId = 0x00;
-						pong.msgType = 0x03;
-						pong.ttl = 1;
-						encodeDataString("$PONG",pong.payload.message.message);
-						RADIO_Send((uint8_t*)&pong);
+							Packet pong;
+							pong.destinationId = 0x00;
+							pong.msgType = 0x03;
+							pong.ttl = 1;
+							encodeDataString("$Q",pong.payload.message.message);
+							RADIO_Send((uint8_t*)&pong);
+						}
+						break;
+					case 'N':
+						{
+							
+							displayMessageBottom.message = "Getting GPS Fix";
+							DISPLAY_MessageWrite(&displayMessageBottom);
+							getGPSFix = true;
+							
+						}
+						break;
 					}
 					
-					TRACE(msg);
-					TRACE("$");
-					TRACE(debug);
-					TRACE("\n");
-					
-					displayMessageBottom.message = msg;
-					DISPLAY_MessageWrite(&displayMessageBottom);
+					if (strlen(msg) > 0)
+					{
+						displayMessageBottom.message = msg;
+						DISPLAY_MessageWrite(&displayMessageBottom);
+					}
 					
 				}
 				break;
@@ -230,11 +242,15 @@ int main()
 				LED_Toggle(RED);
 			}
 		}
+		
+		
+		
+		// GPS MAIN
+		
+		
 
 		// display update
-		//DISPLAY_Update();
-                
-		// gps update
+		DISPLAY_Update();
    
 		// sleep until irq
 
