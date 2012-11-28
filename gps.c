@@ -291,7 +291,8 @@ bool GPS_GetFix() {
 
     }else {
     return false;
-} 
+	}
+}
 
 
 
@@ -514,6 +515,7 @@ bool GPS_Read(GPS_Vector_Type *vector) {
 //creates packets and sends on second iteration
 
 void GPS_Main() {
+	
     if (sendNow) {
         sendNow = false;
         MessageType_NodePosition nodePos;

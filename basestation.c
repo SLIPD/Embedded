@@ -88,7 +88,7 @@ void basestation_main()
 		position.payload.nodePosition.longitude = gps_position.lon;
 		position.payload.nodePosition.elevation = gps_position.alt;
 		
-		TRACE_SendPayload(position,32);
+		TRACE_SendPayload((uint8_t*)&position,32);
 	
 	#endif
 	
