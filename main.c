@@ -243,11 +243,11 @@ int main()
 			}
 		}
 		
-		
-		
 		// GPS MAIN
-		
-		
+		if (getGPSFix && GPS_GetFix())
+		{
+			GPS_Main();
+		}
 
 		// display update
 		DISPLAY_Update();
