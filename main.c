@@ -197,7 +197,7 @@ int main()
 						debug[32];
 					decodeData(p.payload.message.message, msg, debug);
 					
-					switch (debug)
+					switch (*debug)
 					{
 					case 'P':
 						{

@@ -36,4 +36,7 @@ uint8_t nmea_generateChecksum(char *strPtr) ;
 void leuart_send_str(LEUART_TypeDef *uart, char *msg);  
 void Reset();
 void GPS_WarmReset(int32_t x , int32_t y , int32_t z , uint32_t seconds , uint16_t week);
+void GPS_GetLastPosition(GPS_Vector_Type *vector);
+void GPS_GetWayPoint(GPS_Vector_Type *vecto);
+void Update_WayPoint(uint32_t lati, uint32_t longi );
 #endif  /* __GPS_H__ */
