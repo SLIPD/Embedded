@@ -37,13 +37,34 @@ Mag_Vector_Type         magReading;
 Accel_Vector_Type       accelReading;
 uint8_t buf[6];
 char str[32];
-bool getGPSFix = false;
+bool name_set = false;
+float heading = 0,
+	bearing = 0;
+int32_t count = 0;
 
 // Prototypes
 void initClocks();
 void enableTimers();
 void enableInterrupts();
 bool basestation_handlePacket(Packet p);
+void updateHeading();
+
+void updateHeading()
+{
+	
+	GPS_Vector_Type last_position,
+		target_position;
+	
+	GPS_GetLastPosition(&last_position);
+	GPS_GetWayPoint(&target_position);
+	
+	bearing = getBearing(last_position.lat, last_position.lon, target_position.lat, target_position.lon);
+			
+	heading = ieCompass(MAGReadX_16(), MAGReadY_16());
+	DISPLAY_heading(heading, bearing);
+	DISPLAY_Update();
+	
+}
 
 void wait(uint32_t ms)
 {
@@ -139,9 +160,6 @@ int main()
 	// magnetometer init
 	MAGInit(); 
 	magReading = getMAGReadings();
-
-	// eCompass init
-	eCompassInit();
   
 	// radio init
 	RADIO_Init();
@@ -188,6 +206,7 @@ int main()
 				break;
 			case 0x02: // way point
 				// call set waypoint method (gerald & robbie)
+				Update_WayPoint(p.payload.waypoint.waypoints[0].latitude, p.payload.waypoint.waypoints[0].longitude);
 				break;
 			case 0x03: // message
 				{
@@ -216,7 +235,9 @@ int main()
 							
 							displayMessageBottom.message = "Getting GPS Fix";
 							DISPLAY_MessageWrite(&displayMessageBottom);
-							getGPSFix = true;
+							name_set = true;
+							// eCompass init
+							eCompassInit();
 							
 						}
 						break;
@@ -226,6 +247,7 @@ int main()
 					{
 						displayMessageBottom.message = msg;
 						DISPLAY_MessageWrite(&displayMessageBottom);
+						DISPLAY_Update();
 					}
 					
 				}
@@ -244,16 +266,19 @@ int main()
 		}
 		
 		// GPS MAIN
-		if (getGPSFix && GPS_GetFix())
+		if (name_set && GPS_GetFix())
 		{
 			GPS_Main();
+			
+			if (count++ % 1000)
+				updateHeading();
 		}
 
 		// display update
-		DISPLAY_Update();
+		
    
 		// sleep until irq
-
+		
 	}
 
 }
