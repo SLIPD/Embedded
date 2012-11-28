@@ -23,6 +23,8 @@ void eCompassInit()
     {
         if(MAGRegRead(MAG_DR_STATUS_REG) & MAG_ZYXDR_MASK)
         {
+            wait(100);
+            TRACE("Getting calibrate values!\n");
             magReading = getMAGReadings();
             
             x[i] = (int16_t) magReading.x;
@@ -96,27 +98,43 @@ float ieCompass(int16_t x, int16_t y)
     // Convert radians to degrees for readability.
     float headingDegrees = heading * 180/PI; 
     
-    headingDegrees = headingDegrees + 270;
+    headingDegrees = headingDegrees + 110;
     if (headingDegrees > 360) headingDegrees -= 360;
     
     return headingDegrees;
 }
 
-float getBearing(int32_t lat1, int32_t long1, int32_t lat2, int32_t long2)
+float getBearing(int32_t lat1, int32_t lon1, int32_t lat2, int32_t lon2)
 {
-    int32_t vecX = lat2 - lat1;
-    int32_t vecY = long2 - long1;
-    
-    float absoluteVec = sqrt((vecX * vecX) + (vecY * vecY));
-    
-    float bearing = acos((float)vecY/absoluteVec);
+        int32_t vecY = lat2 - lat1;
+        int32_t vecX = lon2 - lon1;
 	
-    bearing = bearing * 180 / PI;
+	// Get radians
+	float bearing = atan2(vecY, vecX);
 	
-    if(vecX < 0)
-    {
-            bearing = fabs(bearing - 360);
-    }
-    
-    return bearing;
-}
+	// Convert to degrees
+	float bearingDeg = bearing *(180/PI);
+	
+	// First quadrant (xpos, ypos)
+	if(bearingDeg >= 0.0 && bearingDeg <= 90.0)
+	{
+		bearingDeg = 360 - bearingDeg;
+	}
+	// Second quadrant (xneg, ypos)
+	else if(bearingDeg > 90.0 && bearingDeg <= 180.0)
+	{
+		bearingDeg = 360 - bearingDeg;
+	}
+	// Third quadrant (xpos, yneg)
+	else if(bearingDeg < 0.0 && bearingDeg >= (-90))
+	{
+		bearingDeg = fabs(bearingDeg) + 90.0;
+	}
+	// Fourth quadrant (xneg, yneg)
+	else if(bearingDeg >= (-180.0) && bearingDeg < (-90))
+	{
+		bearingDeg = fabs(bearingDeg) + 90.0;
+	}
+
+    return bearingDeg;
+}	

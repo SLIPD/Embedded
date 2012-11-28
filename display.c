@@ -42,6 +42,7 @@ bool displayUpdateRequired = false;
 // dir: 4 hard right
 void DISPLAY_direction(uint8_t direction)
 {
+    TRACE("DISPLAY_direction\n");
     // Clear top line
     char blank[16];
     memset(blank,0,16);
@@ -55,11 +56,11 @@ void DISPLAY_direction(uint8_t direction)
     switch(direction)
     {
         case 0:
-            str = HARD_RIGHT;
+            str = HARD_LEFT;
             break;
             
         case 1:
-            str = SOFT_RIGHT;
+            str = SOFT_LEFT;
             break; 
             
         case 2:
@@ -67,11 +68,11 @@ void DISPLAY_direction(uint8_t direction)
             break;   
             
         case 3:
-            str = SOFT_LEFT;
+            str = SOFT_RIGHT;
             break;
             
         case 4:
-            str = HARD_LEFT;
+            str = HARD_RIGHT;
             break;
         case 5:
             str =":D :D :D :D :D";   
