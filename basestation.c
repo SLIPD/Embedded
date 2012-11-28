@@ -1,5 +1,3 @@
-#define TEST
-
 #include "basestation.h"
 
 #include <string.h>
@@ -68,7 +66,7 @@ void basestation_main()
 		while (recv != '*');
 		
 		LED_Off(RED);
-		for (int i = 0; i < 100000; i++);
+		for (int i = 0; i < 500000; i++);
 		
 		while (!(UART1->STATUS & UART_STATUS_TXBL));
 		UART1->TXDATA = '*';
@@ -76,21 +74,40 @@ void basestation_main()
 		
 		Packet position;
 		
-		while (!GPS_GetFix());
+		//while (!GPS_GetFix());
 		
-		GPS_Vector_Type gps_position;
+		//GPS_Vector_Type gps_position;
 		
-		while (!GPS_Read(&gps_position));
+		//while (!GPS_Read(&gps_position));
 		
 		position.originId = 0x00;
 		position.destinationId = 0x00;
 		position.ttl = 1;
 		position.msgType = 0x01;
+		/*
 		position.payload.nodePosition.latitude = gps_position.lat;
 		position.payload.nodePosition.longitude = gps_position.lon;
 		position.payload.nodePosition.elevation = gps_position.alt;
+		*/
 		
-		TRACE_SendPayload((uint8_t*)&position,32);
+		position.payload.nodePosition.latitude = 0xA1A2A3A4;
+		position.payload.nodePosition.longitude = 0xB1B2B3B4;
+		position.payload.nodePosition.elevation = 0xC1C2;
+		
+		position.timestamp = 0x1234;
+		
+		//memset((void*)&position,'.',32);
+		
+		//TRACE_SendPayload((uint8_t*)&position,32);
+		uint8_t *p = (uint8_t*)&position;
+		
+		for (int i = 0; i < 32; i++)
+		{
+			while (!(UART1->STATUS & UART_STATUS_TXBL));
+			UART1->TXDATA = *p;
+			p++;
+			while (!(UART1->STATUS & UART_STATUS_TXC));
+		}
 		
 	#endif
 	

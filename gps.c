@@ -288,6 +288,9 @@ bool GPS_GetFix() {
             }
 
         }
+        #ifdef BASESTATION
+					TRACE(localBuff);
+				#endif
         nmea_msg_rcvd = 0;
 
     }else {
@@ -518,6 +521,9 @@ bool GPS_Read(GPS_Vector_Type *vector) {
 void GPS_Main() {
 	
     if (sendNow) {
+			
+				LED_Toggle(RED);
+    
         sendNow = false;
 				Packet pack;
         pack.payload.nodePosition.elevation = toSend.alt;
@@ -529,9 +535,10 @@ void GPS_Main() {
         pack.msgType = 0x01;
         RADIO_Send((uint8_t*) & pack);
         seqNumber++;
-
+				
     } else if (GPS_Read(&toSend)) {
         sendNow = true;
+        
     }
 
 }

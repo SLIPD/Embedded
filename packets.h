@@ -23,9 +23,8 @@ typedef struct
 	int32_t latitude;
 	int32_t longitude;
 	int16_t elevation;
-        uint16_t hexaseconds;
-	
-	
+  uint16_t hexaseconds;
+
 	uint16_t last_seq_num;
 	
 } MessageType_NodePosition;

@@ -166,7 +166,11 @@ int main()
 
 	// radio get id
 	RADIO_GetID();
-
+	
+	displayMessageTop.message = "Identified";
+	DISPLAY_MessageWrite(&displayMessageTop);
+	DISPLAY_Update();
+	
 	// enable tdma
 	RADIO_EnableTDMA();
 	
@@ -222,6 +226,7 @@ int main()
 							{
 								displayMessageTop.message = "Getting GPS fix";
 								DISPLAY_MessageWrite(&displayMessageTop);
+								DISPLAY_Update();
 								name_set = true;
 								// eCompass init
 								eCompassInit();
@@ -250,10 +255,13 @@ int main()
 		{
 			GPS_Main();
 			
-			if (count++ % 1000)
+			if (count % 1000 == 0)
 				updateHeading();
 		}
 		
+		if (count % 1000 == 0)
+			LED_Toggle(GREEN);
+		count++;
 		
 	}
 
