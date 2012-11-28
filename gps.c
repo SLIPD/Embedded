@@ -535,3 +535,15 @@ void GPS_Main() {
     }
 
 }
+
+void GPS_GetWayPoint(GPS_Vector_Type *vecto){
+    vecto->alt = waypoint.alt;
+    vecto->lat = waypoint.lat;
+    vecto->lon = waypoint.lon;
+}
+
+
+void Update_WayPoint(uint32_t lati, uint32_t longi ){
+    waypoint.lat = lati;
+    waypoint.lon = longi;
+}
