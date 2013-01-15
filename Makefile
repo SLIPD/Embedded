@@ -96,10 +96,10 @@ efm32usb/src/efm32_usbdint.c \
 efm32usb/src/efm32_usbhal.c \
 led.c \
 main.c \
-usb.c \
 radio.c \
 queue.c \
-tdma_scheduler.c
+tdma_scheduler.c \
+uart.c
 
 S_SRC +=  \
 CMSIS/CM3/DeviceSupport/EnergyMicro/EFM32/startup/cs3/startup_efm32gg.s

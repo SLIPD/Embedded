@@ -1,19 +1,13 @@
 #ifndef __LED_H__
 #define __LED_H__
 
-#include "stdint.h"
-
-typedef struct
-{
-	uint8_t port;
-	uint8_t pin;
-} LED_Config;
+#define LED_GPIO_PORT 0
 
 typedef enum
 {
 	RED = 0,
-	BLUE = 1,
-	GREEN = 2,
+	GREEN = 1,
+	BLUE = 3,
 } LED;
 
 void LED_Init();

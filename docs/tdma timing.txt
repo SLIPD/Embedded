@@ -1,50 +1,50 @@
 MASTER
-	t=0 (TIM1_OF)
+	t=0 (TIM1_OF / TIM1_OF) 
 		disable sys calls
 		config tx
 		queue timing packet
 		enable timer CC
 		queue packets
 	
-	t=guard period (TIM1_CC0)
+	t=guard period (TIM1_CC0 / TIM1_CC1) #### Y
 		enable tx (CC)
 		enable sys calls
 		call check fifo
 		disable timer CC
 	
-	t=slot period - tx protection (TIM1_CC1)
+	t=slot period - tx protection (TIM1_CC1 / TIM1_CC0) #### Y
 		disable sys calls
 	
-	t=slot period (TIM1_CC2)
+	t=slot period (TIM1_CC2 / TIM1_CC2) 
 		config rx
 		enable sys calls
 	
 SLAVE
-	t=0 (TIM1_OF)
+	t=0 (TIM1_OF / TIM1_OF) 
 		enable system calls
 		enable rx
 
-	t=~guard period (TIM0_CC2)
+	t=~guard period (TIM0_CC2 / TIM1_CC0)  #### Y
 		capture timing packet
 			[first time] enable IRQs
 
-	t=slot period (TIM0_CC0)
+	t=slot period (TIM0_CC0 / TIM0_CC0) 
 		disble rx
 
-	t=slot period * slot id + 1 (TIM0_CC1)
+	t=slot period * slot id + 1 (TIM0_CC1 / TIM0_CC1) 
 		disable system calls
 		config tx
 		enable timer CC
 		queue packets
 
-	t=slot period * slot id + guard period (TIM1_CC0)
+	t=slot period * slot id + guard period (TIM1_CC0 / TIM1_CC1) #### Y
 		enable tx (CC)
 		disable timer CC
 		enable sys calls
 		call check fifo
 
-	t=slot period * (slot id + 1) - tx protection (TIM1_CC1)
+	t=slot period * (slot id + 1) - tx protection (TIM1_CC1 / TIM0_CC2) #### 
 		disable sys calls
 
-	t=slot period * (slot id + 1) - 1 (TIM1_CC2)
+	t=slot period * (slot id + 1) - 1 (TIM1_CC2 / TIM1_CC2) 
 		radio off

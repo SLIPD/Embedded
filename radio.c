@@ -64,21 +64,19 @@ void RADIO_Init()
 	GPIO_PinModeSet(NRF_RXEN_PORT, NRF_RXEN_PIN, gpioModePushPull, 0);
 	GPIO_PinModeSet(NRF_INT_PORT, NRF_INT_PIN, gpioModeInput, 0);
 
-	GPIO_PinModeSet(gpioPortC, 11, gpioModePushPull, 1);
-	GPIO_PinModeSet(gpioPortC, 10, gpioModeInput, 0);
-	GPIO_PinModeSet(gpioPortC, 9, gpioModePushPull, 0);
+	GPIO_PinModeSet(gpioPortB, 5, gpioModePushPull, 1);
+	GPIO_PinModeSet(gpioPortB, 4, gpioModeInput, 0);
+	GPIO_PinModeSet(gpioPortB, 3, gpioModePushPull, 0);
 	
 	// configure usart
 	USART_InitSync_TypeDef usartInit = USART_INITSYNC_DEFAULT;
-	
+
 	usartInit.msbf = true;
 	usartInit.clockMode = usartClockMode0;
 	usartInit.baudrate = 8000000;
-	USART_InitSync(USART0, &usartInit);
-	USART0->ROUTE |=	USART_ROUTE_TXPEN | 
-						USART_ROUTE_RXPEN | 
-						USART_ROUTE_CLKPEN | 
-						USART_ROUTE_LOCATION_LOC2;
+	USART_InitSync(USART2, &usartInit);
+	USART2->ROUTE = (USART2->ROUTE & ~_USART_ROUTE_LOCATION_MASK) | USART_ROUTE_LOCATION_LOC1;
+	USART2->ROUTE |= USART_ROUTE_TXPEN | USART_ROUTE_RXPEN | USART_ROUTE_CLKPEN;
 	
 	// configure radio
 	uint8_t addr[5];
@@ -376,7 +374,7 @@ void RADIO_TransferSetup(RADIO_DmaTransfer *transfer)
 	// tx
 	chnlCfg.highPri   = false;
 	chnlCfg.enableInt = true;
-	chnlCfg.select	= DMAREQ_USART0_TXBL;
+	chnlCfg.select	= DMAREQ_USART2_TXBL;
 	chnlCfg.cb		= &radioCb;
 	DMA_CfgChannel(DMA_CHANNEL_RTX, &chnlCfg);
 	
@@ -389,7 +387,7 @@ void RADIO_TransferSetup(RADIO_DmaTransfer *transfer)
 	
 	// tx ctrl
 	cfg.src		= (void *) &transfer->ctrl;	   
-	cfg.dst		= (void *) &USART0->TXDATA; 
+	cfg.dst		= (void *) &USART2->TXDATA; 
 	cfg.nMinus1	= 0;
 	DMA_CfgDescrScatterGather(dmaTxBlock, 0, &cfg);
 	
@@ -403,7 +401,7 @@ void RADIO_TransferSetup(RADIO_DmaTransfer *transfer)
 			transfer->src = &radioScratch;
 		}
 		cfg.src		= (void *) transfer->src; 
-		cfg.dst		= (void *) &USART0->TXDATA;
+		cfg.dst		= (void *) &USART2->TXDATA;
 		cfg.nMinus1 = transfer->len - 1;
 		DMA_CfgDescrScatterGather(dmaTxBlock, 1, &cfg);
 	}
@@ -411,7 +409,7 @@ void RADIO_TransferSetup(RADIO_DmaTransfer *transfer)
 	// rx
 	chnlCfg.highPri   = false;
 	chnlCfg.enableInt = true;
-	chnlCfg.select	= DMAREQ_USART0_RXDATAV;
+	chnlCfg.select	= DMAREQ_USART2_RXDATAV;
 	chnlCfg.cb		= &radioCb;
 	DMA_CfgChannel(DMA_CHANNEL_RRX, &chnlCfg);
 	
@@ -423,7 +421,7 @@ void RADIO_TransferSetup(RADIO_DmaTransfer *transfer)
 	cfg.peripheral = true; 
 	
 	// rx ctrl
-	cfg.src		= (void *) &USART0->RXDATA;	   
+	cfg.src		= (void *) &USART2->RXDATA;	   
 	cfg.dst		= (void *) &radioDump;
 	cfg.nMinus1	= 0;
 	DMA_CfgDescrScatterGather(dmaRxBlock, 0, &cfg);
@@ -435,7 +433,7 @@ void RADIO_TransferSetup(RADIO_DmaTransfer *transfer)
 			cfg.dstInc	 = dmaDataIncNone;
 			transfer->dst = &radioScratch;
 		}
-		cfg.src		= (void *) &USART0->RXDATA;	   
+		cfg.src		= (void *) &USART2->RXDATA;	   
 		cfg.dst		= (void *) transfer->dst;
 		cfg.nMinus1 = transfer->len - 1;
 		DMA_CfgDescrScatterGather(dmaRxBlock, 1, &cfg);
@@ -475,7 +473,7 @@ void RADIO_TransferComplete(unsigned int channel, bool primary, void *transfer)
 		// rx complete
 		NRF_CSN_hi;
 		int i;
-		for (i = 0; i < 500; i++);
+		for (i = 0; i < 1000; i++);
 		RADIO_TransferTeardown((RADIO_DmaTransfer*)transfer);
 		break;
 	}

@@ -129,7 +129,10 @@ void InitClocks()
 	RTC_Enable(true);
 	
 	// enable radio usart
-	CMU_ClockEnable(cmuClock_USART0, true);
+	CMU_ClockEnable(cmuClock_USART2, true);
+	
+	// enable trace
+	CMU_ClockEnable(cmuClock_UART1, true);
 	
 	// enable dma clock
 	CMU_ClockEnable(cmuClock_DMA, true);
@@ -151,13 +154,17 @@ void EnableInterrupts()
 	NVIC_EnableIRQ(TIMER0_IRQn);
 	NVIC_EnableIRQ(TIMER1_IRQn);
 	
-	NVIC_SetPriority(USB_IRQn, 3);
-	NVIC_SetPriority(DMA_IRQn, 2);
+	NVIC_EnableIRQ(UART1_RX_IRQn);
 	
-	NVIC_SetPriority(TIMER0_IRQn, 0);
-	NVIC_SetPriority(TIMER1_IRQn, 1);
+	NVIC_SetPriority(UART1_TX_IRQn, 0);
+	NVIC_SetPriority(UART1_RX_IRQn, 4);
 	
-	NVIC_SetPriority(GPIO_EVEN_IRQn, 0);
+	NVIC_SetPriority(DMA_IRQn, 3);
+	
+	NVIC_SetPriority(TIMER0_IRQn, 1);
+	NVIC_SetPriority(TIMER1_IRQn, 2);
+	
+	NVIC_SetPriority(GPIO_EVEN_IRQn, 1);
 	
 }
 
@@ -173,8 +180,16 @@ int main()
 	// start clocks
 	InitClocks();
 	
+	// init trace
+	NVIC_EnableIRQ(UART1_TX_IRQn);
+	TRACE_Init();
+	
+	TRACE("TRACE OK\n");
+	
 	// init LEDs
 	LED_Init();
+	
+	TRACE("LEDS OK\n");
 	
 	// start DMA
 	DMA_Init_TypeDef dmaInit =
@@ -184,11 +199,12 @@ int main()
     };
     DMA_Init(&dmaInit);
     
+    TRACE("DMA OK\n");
+    
     // init radio
     RADIO_Init();
     
-    // init usb
-    USB_Init();
+    TRACE("RADIO OK\n");
     
     // enable interrupts 
     EnableInterrupts();
@@ -196,7 +212,7 @@ int main()
 	// show startup LEDs
 	StartupLEDs();
 	
-	//#define SENDER
+	#define SENDER
 	
 	uint8_t packet[32];
 	char tmsg[255];
@@ -234,7 +250,7 @@ int main()
 		
 		//RADIO_EnableSystemCalls(true);
 		//RADIO_SetMode(RADIO_TX);
-		
+		/*
 		while(1)
 		{
 			
@@ -244,16 +260,25 @@ int main()
 			{
 				sprintf(tmsg, "packet queued [0x%X]\n", i);
 				memset(packet,i++,32);
-				//TRACE(tmsg);
+				TRACE(tmsg);
 				if (!RADIO_Send(packet))
 					TRACE(" << BUFFER OVERFLOW >>\n");
 			}
-			wait(150);
+			wait(200);
 			while(RADIO_Recv(packet))
 			{
 				sprintf(tmsg, "%i: packet recvd [0x%X]\n", TIMER_CounterGet(TIMER1), packet[0]);
 				TRACE(tmsg);
 			}
+			
+		}
+		*/
+		
+		while(1)
+		{
+			
+			
+			
 			
 		}
 		
@@ -284,7 +309,7 @@ int main()
 			if (RADIO_Recv(packet))
 			{
 				//TRACE("Packet received\n\n");
-				USB_Transmit(packet,1);
+				UART1_Send(packet,1);
 				//TRACE("\n\n");
 				RADIO_Send(packet);
 			}
